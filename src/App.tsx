@@ -12,6 +12,8 @@ import Login from './pages/Login'
 import Ranking from './pages/Ranking'
 import MeuPerfil from './pages/MeuPerfil'
 
+import PerfilJogador from './pages/PerfilJogador'
+
 function App() {
   return (
     <Routes>
@@ -59,6 +61,11 @@ function App() {
       <Route
          path="/meu-perfil"
         element={<MeuPerfil />}
+      />
+
+      <Route
+        path="/jogador/:id"
+        element={<PerfilJogador />}
       />
 
       <Route

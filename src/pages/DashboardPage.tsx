@@ -8,6 +8,7 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react'
+import { Link } from 'react-router'
 import Header from '../components/Header'
 import {
   useJogadores,
@@ -104,9 +105,11 @@ function CardTop3({
           const estilo = estilosPosicao[indice]
 
           return (
-            <div
+            <Link
               key={jogador.id}
-              className="flex items-center gap-3 px-5 py-4 transition hover:bg-slate-800/40"
+              to={`/jogador/${jogador.id}`}
+              title={`Ver perfil de ${jogador.nome}`}
+              className="group flex items-center gap-3 px-5 py-4 transition hover:bg-slate-800/60"
             >
               <span
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-sm font-bold ${estilo.classe}`}
@@ -115,13 +118,13 @@ function CardTop3({
               </span>
 
               <div className="flex min-w-0 flex-1 items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-800 text-sm font-bold text-slate-300">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-800 text-sm font-bold text-slate-300 transition group-hover:bg-emerald-500/10 group-hover:text-emerald-400">
                   {jogador.nome
                     .charAt(0)
                     .toUpperCase()}
                 </div>
 
-                <p className="truncate font-semibold text-slate-200">
+                <p className="truncate font-semibold text-slate-200 transition group-hover:text-emerald-400">
                   {jogador.nome}
                 </p>
               </div>
@@ -131,7 +134,7 @@ function CardTop3({
               >
                 {jogador[campo]}
               </strong>
-            </div>
+            </Link>
           )
         })}
 
@@ -403,17 +406,21 @@ function DashboardPage() {
                             </td>
 
                             <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 font-bold text-slate-300">
+                              <Link
+                                to={`/jogador/${jogador.id}`}
+                                title={`Ver perfil de ${jogador.nome}`}
+                                className="group inline-flex items-center gap-3"
+                              >
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 font-bold text-slate-300 transition group-hover:bg-emerald-500/10 group-hover:text-emerald-400">
                                   {jogador.nome
                                     .charAt(0)
                                     .toUpperCase()}
                                 </div>
 
-                                <span className="font-semibold text-white">
+                                <span className="font-semibold text-white transition group-hover:text-emerald-400 group-hover:underline">
                                   {jogador.nome}
                                 </span>
-                              </div>
+                              </Link>
                             </td>
 
                             <td className="px-4 py-4 text-center font-bold text-emerald-400">
