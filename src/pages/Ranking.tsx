@@ -339,7 +339,7 @@ function Ranking({ tipo }: RankingProps) {
       <div className="min-h-screen bg-slate-950 text-white">
         <Header />
 
-        <main className="mx-auto max-w-7xl px-5 py-8">
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-5 sm:py-8">
           <section className="rounded-2xl border border-slate-800 bg-slate-900 p-10 text-center">
             <div className="mx-auto h-11 w-11 animate-spin rounded-full border-4 border-slate-700 border-t-emerald-500" />
 
@@ -361,7 +361,7 @@ function Ranking({ tipo }: RankingProps) {
       <div className="min-h-screen bg-slate-950 text-white">
         <Header />
 
-        <main className="mx-auto max-w-7xl px-5 py-8">
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-5 sm:py-8">
           <section className="rounded-2xl border border-red-500/20 bg-red-500/10 p-10 text-center">
             <h2 className="text-xl font-bold text-red-300">
               Erro ao carregar o ranking
@@ -424,7 +424,7 @@ function Ranking({ tipo }: RankingProps) {
     <div className="min-h-screen bg-slate-950 text-white">
       <Header />
 
-      <main className="mx-auto max-w-7xl px-5 py-8">
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-5 sm:py-8">
         <section className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div>
             <div
@@ -453,7 +453,7 @@ function Ranking({ tipo }: RankingProps) {
               <Link
                 to={`/jogador/${lider.id}`}
                 title={`Ver perfil de ${lider.nome}`}
-                className="group flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900 px-5 py-4 transition hover:border-emerald-500/30 hover:bg-slate-800/60"
+                className="group flex w-full items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900 px-4 py-4 transition hover:border-emerald-500/30 hover:bg-slate-800/60 sm:gap-4 sm:px-5 md:w-auto"
               >
                 <AvatarJogador
                   jogador={lider}
@@ -512,8 +512,131 @@ function Ranking({ tipo }: RankingProps) {
               </button>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[800px] text-left">
+            {/* MOBILE: cards no lugar da tabela */}
+            <div className="space-y-3 p-4 md:hidden">
+              {jogadoresOrdenados.length > 0 ? (
+                jogadoresOrdenados.map(
+                  (jogador, indice) => {
+                    const posicao = indice + 1
+
+                    return (
+                      <Link
+                        key={jogador.id}
+                        to={`/jogador/${jogador.id}`}
+                        title={`Ver perfil de ${jogador.nome}`}
+                        className="group block rounded-2xl border border-slate-800 bg-slate-950/40 p-4 transition hover:border-emerald-500/30 hover:bg-slate-800/70 active:scale-[0.99]"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`inline-flex h-10 min-w-10 shrink-0 items-center justify-center rounded-xl px-2 text-sm font-bold ${estiloPosicao(
+                              posicao,
+                            )}`}
+                          >
+                            {posicao}º
+                          </span>
+
+                          <AvatarJogador
+                            jogador={jogador}
+                          />
+
+                          <div className="min-w-0 flex-1">
+                            <NomeJogador
+                              jogador={jogador}
+                            />
+
+                            <p className="mt-1 text-[11px] text-slate-600">
+                              Toque para ver o perfil
+                            </p>
+                          </div>
+
+                          <div className="shrink-0 text-right">
+                            <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                              {configuracao.rotulo}
+                            </p>
+
+                            <p
+                              className={`mt-0.5 text-2xl font-bold ${configuracao.corTexto}`}
+                            >
+                              {jogador[tipo]}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-4 gap-2 border-t border-slate-800 pt-4">
+                          <div className="text-center">
+                            <p className="text-[10px] uppercase tracking-wide text-slate-600">
+                              Gols
+                            </p>
+
+                            <p
+                              className={`mt-1 text-sm ${classeValor(
+                                'gols',
+                              )}`}
+                            >
+                              {jogador.gols}
+                            </p>
+                          </div>
+
+                          <div className="text-center">
+                            <p className="text-[10px] uppercase tracking-wide text-slate-600">
+                              Assist.
+                            </p>
+
+                            <p
+                              className={`mt-1 text-sm ${classeValor(
+                                'assistencias',
+                              )}`}
+                            >
+                              {jogador.assistencias}
+                            </p>
+                          </div>
+
+                          <div className="text-center">
+                            <p className="text-[10px] uppercase tracking-wide text-slate-600">
+                              Vitórias
+                            </p>
+
+                            <p
+                              className={`mt-1 text-sm ${classeValor(
+                                'vitorias',
+                              )}`}
+                            >
+                              {jogador.vitorias}
+                            </p>
+                          </div>
+
+                          <div className="text-center">
+                            <p className="text-[10px] uppercase tracking-wide text-slate-600">
+                              Estrelas
+                            </p>
+
+                            <p
+                              className={`mt-1 inline-flex items-center justify-center gap-1 text-sm ${classeValor(
+                                'estrelas',
+                              )}`}
+                            >
+                              <Star
+                                size={13}
+                                fill="currentColor"
+                              />
+                              {jogador.estrelas}
+                            </p>
+                          </div>
+                        </div>
+                      </Link>
+                    )
+                  },
+                )
+              ) : (
+                <div className="px-4 py-10 text-center text-slate-400">
+                  Nenhum jogador cadastrado.
+                </div>
+              )}
+            </div>
+
+            {/* DESKTOP/TABLET: mantém a tabela */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full min-w-[760px] text-left">
                 <thead className="bg-slate-950/50 text-xs uppercase text-slate-500">
                   <tr>
                     <th className="px-6 py-4">
