@@ -1,4 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from 'react'
 import { supabase } from '../lib/supabase'
 
 export type Jogador = {
@@ -8,37 +12,55 @@ export type Jogador = {
   assistencias: number
   vitorias: number
   estrelas: number
+  ativo: boolean
+  apelido: string | null
+  foto_url: string | null
 }
 
 export function useJogadores() {
-  const [jogadores, setJogadores] = useState<Jogador[]>([])
-  const [carregando, setCarregando] = useState(true)
-  const [erro, setErro] = useState('')
+  const [jogadores, setJogadores] =
+    useState<Jogador[]>([])
 
-  const carregarJogadores = useCallback(async () => {
-    setCarregando(true)
-    setErro('')
+  const [carregando, setCarregando] =
+    useState(true)
 
-    const { data, error } = await supabase
-      .from('jogadores')
-      .select(
-        'id, nome, gols, assistencias, vitorias, estrelas',
+  const [erro, setErro] =
+    useState<string | null>(null)
+
+  const carregarJogadores = useCallback(
+    async () => {
+      setCarregando(true)
+      setErro(null)
+
+      const {
+        data,
+        error,
+      } = await supabase.rpc(
+        'listar_jogadores_publicos',
       )
-      .eq('ativo', true)
-      .order('nome', { ascending: true })
 
-    if (error) {
-      console.error('Erro ao buscar jogadores:', error)
+      if (error) {
+        console.error(
+          'Erro ao carregar jogadores:',
+          error,
+        )
 
-      setErro('Não foi possível carregar os jogadores.')
-      setJogadores([])
+        setJogadores([])
+        setErro(
+          'Não foi possível carregar os jogadores.',
+        )
+        setCarregando(false)
+        return
+      }
+
+      setJogadores(
+        (data as Jogador[] | null) ?? [],
+      )
+
       setCarregando(false)
-      return
-    }
-
-    setJogadores(data ?? [])
-    setCarregando(false)
-  }, [])
+    },
+    [],
+  )
 
   useEffect(() => {
     carregarJogadores()

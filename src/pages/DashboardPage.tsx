@@ -30,6 +30,11 @@ type CardTop3Props = {
   classeValor: string
 }
 
+type AvatarJogadorProps = {
+  jogador: Jogador
+  tamanho?: 'sm' | 'md'
+}
+
 const estilosPosicao = [
   {
     texto: '1º',
@@ -47,6 +52,37 @@ const estilosPosicao = [
       'border-orange-600/30 bg-orange-600/15 text-orange-400',
   },
 ] as const
+
+function AvatarJogador({
+  jogador,
+  tamanho = 'md',
+}: AvatarJogadorProps) {
+  const classesTamanho =
+    tamanho === 'sm'
+      ? 'h-9 w-9 text-sm'
+      : 'h-10 w-10 text-base'
+
+  if (jogador.foto_url) {
+    return (
+      <img
+        src={jogador.foto_url}
+        alt={`Foto de ${jogador.nome}`}
+        loading="lazy"
+        className={`${classesTamanho} shrink-0 rounded-full border border-slate-700 object-cover`}
+      />
+    )
+  }
+
+  return (
+    <div
+      className={`${classesTamanho} flex shrink-0 items-center justify-center rounded-full bg-slate-800 font-bold text-slate-300 transition group-hover:bg-emerald-500/10 group-hover:text-emerald-400`}
+    >
+      {jogador.nome
+        .charAt(0)
+        .toUpperCase()}
+    </div>
+  )
+}
 
 function obterTop3(
   jogadores: Jogador[],
@@ -118,15 +154,23 @@ function CardTop3({
               </span>
 
               <div className="flex min-w-0 flex-1 items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-800 text-sm font-bold text-slate-300 transition group-hover:bg-emerald-500/10 group-hover:text-emerald-400">
-                  {jogador.nome
-                    .charAt(0)
-                    .toUpperCase()}
-                </div>
+                <AvatarJogador
+                  jogador={jogador}
+                  tamanho="sm"
+                />
 
-                <p className="truncate font-semibold text-slate-200 transition group-hover:text-emerald-400">
-                  {jogador.nome}
-                </p>
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-slate-200 transition group-hover:text-emerald-400">
+                    {jogador.apelido ||
+                      jogador.nome}
+                  </p>
+
+                  {jogador.apelido && (
+                    <p className="truncate text-[11px] text-slate-500">
+                      {jogador.nome}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <strong
@@ -411,15 +455,22 @@ function DashboardPage() {
                                 title={`Ver perfil de ${jogador.nome}`}
                                 className="group inline-flex items-center gap-3"
                               >
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 font-bold text-slate-300 transition group-hover:bg-emerald-500/10 group-hover:text-emerald-400">
-                                  {jogador.nome
-                                    .charAt(0)
-                                    .toUpperCase()}
-                                </div>
+                                <AvatarJogador
+                                  jogador={jogador}
+                                />
 
-                                <span className="font-semibold text-white transition group-hover:text-emerald-400 group-hover:underline">
-                                  {jogador.nome}
-                                </span>
+                                <div>
+                                  <span className="block font-semibold text-white transition group-hover:text-emerald-400 group-hover:underline">
+                                    {jogador.apelido ||
+                                      jogador.nome}
+                                  </span>
+
+                                  {jogador.apelido && (
+                                    <span className="block text-xs text-slate-500">
+                                      {jogador.nome}
+                                    </span>
+                                  )}
+                                </div>
                               </Link>
                             </td>
 
