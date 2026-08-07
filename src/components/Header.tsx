@@ -1,4 +1,5 @@
 import {
+  CreditCard,
   Goal,
   Handshake,
   Home,
@@ -9,7 +10,10 @@ import {
   UserRound,
 } from 'lucide-react'
 import { useState } from 'react'
-import { NavLink, useNavigate } from 'react-router'
+import {
+  NavLink,
+  useNavigate,
+} from 'react-router'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 
@@ -48,28 +52,33 @@ function Header() {
   const [saindo, setSaindo] = useState(false)
 
   const linksVisiveis = [
-  ...links,
+    ...links,
 
-  ...(perfil?.tipo === 'jogador'
-    ? [
-        {
-          caminho: '/meu-perfil',
-          nome: 'Meu perfil',
-          Icone: UserRound,
-        },
-      ]
-    : []),
+    ...(perfil?.tipo === 'jogador'
+      ? [
+          {
+            caminho: '/meu-perfil',
+            nome: 'Meu perfil',
+            Icone: UserRound,
+          },
+          {
+            caminho: '/meu-card',
+            nome: 'Card',
+            Icone: CreditCard,
+          },
+        ]
+      : []),
 
-  ...(perfil?.tipo === 'admin'
-    ? [
-        {
-          caminho: '/admin/jogadores',
-          nome: 'Admin',
-          Icone: Settings,
-        },
-      ]
-    : []),
-]
+    ...(perfil?.tipo === 'admin'
+      ? [
+          {
+            caminho: '/admin/jogadores',
+            nome: 'Admin',
+            Icone: Settings,
+          },
+        ]
+      : []),
+  ]
 
   async function sair() {
     if (saindo) {
@@ -78,10 +87,14 @@ function Header() {
 
     setSaindo(true)
 
-    const { error } = await supabase.auth.signOut()
+    const { error } =
+      await supabase.auth.signOut()
 
     if (error) {
-      console.error('Erro ao encerrar sessão:', error)
+      console.error(
+        'Erro ao encerrar sessão:',
+        error,
+      )
       setSaindo(false)
       return
     }
@@ -110,22 +123,30 @@ function Header() {
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <nav className="flex max-w-full gap-1 overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/50 p-1">
-            {linksVisiveis.map(({ caminho, nome, Icone }) => (
-              <NavLink
-                key={caminho}
-                to={caminho}
-                className={({ isActive }) =>
-                  `flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                    isActive
-                      ? 'bg-emerald-500 text-white'
-                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                  }`
-                }
-              >
-                <Icone size={16} />
-                {nome}
-              </NavLink>
-            ))}
+            {linksVisiveis.map(
+              ({
+                caminho,
+                nome,
+                Icone,
+              }) => (
+                <NavLink
+                  key={caminho}
+                  to={caminho}
+                  className={({
+                    isActive,
+                  }) =>
+                    `flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                      isActive
+                        ? 'bg-emerald-500 text-white'
+                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    }`
+                  }
+                >
+                  <Icone size={16} />
+                  {nome}
+                </NavLink>
+              ),
+            )}
           </nav>
 
           <button

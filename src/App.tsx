@@ -9,10 +9,10 @@ import AdminJogadores from './pages/AdminJogadores'
 import CriarConta from './pages/CriarConta'
 import DashboardPage from './pages/DashboardPage'
 import Login from './pages/Login'
-import Ranking from './pages/Ranking'
+import MeuCard from './pages/MeuCard'
 import MeuPerfil from './pages/MeuPerfil'
-
 import PerfilJogador from './pages/PerfilJogador'
+import Ranking from './pages/Ranking'
 
 function App() {
   return (
@@ -37,17 +37,38 @@ function App() {
 
         <Route
           path="/ranking/assistencias"
-          element={<Ranking tipo="assistencias" />}
+          element={
+            <Ranking tipo="assistencias" />
+          }
         />
 
         <Route
           path="/ranking/vitorias"
-          element={<Ranking tipo="vitorias" />}
+          element={
+            <Ranking tipo="vitorias" />
+          }
         />
 
         <Route
           path="/ranking/estrelas"
-          element={<Ranking tipo="estrelas" />}
+          element={
+            <Ranking tipo="estrelas" />
+          }
+        />
+
+        <Route
+          path="/meu-perfil"
+          element={<MeuPerfil />}
+        />
+
+        <Route
+          path="/meu-card"
+          element={<MeuCard />}
+        />
+
+        <Route
+          path="/jogador/:id"
+          element={<PerfilJogador />}
         />
 
         <Route element={<AdminRoute />}>
@@ -57,16 +78,6 @@ function App() {
           />
         </Route>
       </Route>
-
-      <Route
-         path="/meu-perfil"
-        element={<MeuPerfil />}
-      />
-
-      <Route
-        path="/jogador/:id"
-        element={<PerfilJogador />}
-      />
 
       <Route
         path="*"
