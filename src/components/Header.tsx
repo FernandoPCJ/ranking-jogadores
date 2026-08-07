@@ -6,6 +6,7 @@ import {
   Settings,
   Star,
   Trophy,
+  UserRound,
 } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router'
@@ -46,17 +47,29 @@ function Header() {
 
   const [saindo, setSaindo] = useState(false)
 
-  const linksVisiveis =
-    perfil?.tipo === 'admin'
-      ? [
-          ...links,
-          {
-            caminho: '/admin/jogadores',
-            nome: 'Admin',
-            Icone: Settings,
-          },
-        ]
-      : links
+  const linksVisiveis = [
+  ...links,
+
+  ...(perfil?.tipo === 'jogador'
+    ? [
+        {
+          caminho: '/meu-perfil',
+          nome: 'Meu perfil',
+          Icone: UserRound,
+        },
+      ]
+    : []),
+
+  ...(perfil?.tipo === 'admin'
+    ? [
+        {
+          caminho: '/admin/jogadores',
+          nome: 'Admin',
+          Icone: Settings,
+        },
+      ]
+    : []),
+]
 
   async function sair() {
     if (saindo) {

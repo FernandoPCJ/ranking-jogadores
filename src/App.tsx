@@ -10,6 +10,7 @@ import CriarConta from './pages/CriarConta'
 import DashboardPage from './pages/DashboardPage'
 import Login from './pages/Login'
 import Ranking from './pages/Ranking'
+import MeuPerfil from './pages/MeuPerfil'
 
 function App() {
   return (
@@ -54,6 +55,11 @@ function App() {
           />
         </Route>
       </Route>
+
+      <Route
+         path="/meu-perfil"
+        element={<MeuPerfil />}
+      />
 
       <Route
         path="*"
