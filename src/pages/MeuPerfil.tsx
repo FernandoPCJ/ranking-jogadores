@@ -43,6 +43,62 @@ type DadosJogador = {
   ativo: boolean
 }
 
+type PosicoesRanking = {
+  gols: number | null
+  assistencias: number | null
+  vitorias: number | null
+}
+
+type CampoRanking = 'gols' | 'assistencias' | 'vitorias'
+
+function calcularPosicaoRanking(
+  jogadores: DadosJogador[],
+  jogadorId: number,
+  campo: CampoRanking,
+) {
+  const ordenados = [...jogadores].sort((a, b) => {
+    const diferenca = b[campo] - a[campo]
+
+    if (diferenca !== 0) {
+      return diferenca
+    }
+
+    return a.nome.localeCompare(b.nome, 'pt-BR', {
+      sensitivity: 'base',
+    })
+  })
+
+  const indice = ordenados.findIndex(
+    (item) => item.id === jogadorId,
+  )
+
+  return indice >= 0 ? indice + 1 : null
+}
+
+function textoPosicaoRanking(posicao: number | null) {
+  if (!posicao) {
+    return 'Sem posição no ranking'
+  }
+
+  return `${posicao}º no ranking`
+}
+
+function classePosicaoRanking(posicao: number | null) {
+  if (posicao === 1) {
+    return 'border-amber-400/30 bg-amber-400/10 text-amber-300'
+  }
+
+  if (posicao === 2) {
+    return 'border-slate-300/30 bg-slate-300/10 text-slate-300'
+  }
+
+  if (posicao === 3) {
+    return 'border-orange-400/30 bg-orange-400/10 text-orange-300'
+  }
+
+  return 'border-slate-700 bg-slate-800/70 text-slate-400'
+}
+
 function MeuPerfil() {
   const { sessao } = useAuth()
 
@@ -54,6 +110,13 @@ function MeuPerfil() {
 
   const [jogador, setJogador] =
     useState<DadosJogador | null>(null)
+
+  const [posicoesRanking, setPosicoesRanking] =
+    useState<PosicoesRanking>({
+      gols: null,
+      assistencias: null,
+      vitorias: null,
+    })
 
   const [apelido, setApelido] = useState('')
   const [bio, setBio] = useState('')
@@ -127,6 +190,11 @@ function MeuPerfil() {
 
     if (!perfilCarregado.jogador_id) {
       setJogador(null)
+      setPosicoesRanking({
+        gols: null,
+        assistencias: null,
+        vitorias: null,
+      })
       setCarregando(false)
       return
     }
@@ -161,14 +229,75 @@ function MeuPerfil() {
       )
 
       setJogador(null)
+      setPosicoesRanking({
+        gols: null,
+        assistencias: null,
+        vitorias: null,
+      })
       setCarregando(false)
       return
     }
 
-    setJogador(
+    const jogadorCarregado =
       (dadosJogador as DadosJogador | null) ??
-        null,
-    )
+      null
+
+    setJogador(jogadorCarregado)
+
+    if (jogadorCarregado) {
+      const {
+        data: jogadoresAtivos,
+        error: erroRanking,
+      } = await supabase
+        .from('jogadores')
+        .select(
+          `
+            id,
+            nome,
+            gols,
+            assistencias,
+            vitorias,
+            estrelas,
+            ativo
+          `,
+        )
+        .eq('ativo', true)
+
+      if (erroRanking) {
+        console.error(
+          'Erro ao calcular posições nos rankings:',
+          erroRanking,
+        )
+
+        setPosicoesRanking({
+          gols: null,
+          assistencias: null,
+          vitorias: null,
+        })
+      } else {
+        const lista =
+          (jogadoresAtivos as DadosJogador[] | null) ??
+          []
+
+        setPosicoesRanking({
+          gols: calcularPosicaoRanking(
+            lista,
+            jogadorCarregado.id,
+            'gols',
+          ),
+          assistencias: calcularPosicaoRanking(
+            lista,
+            jogadorCarregado.id,
+            'assistencias',
+          ),
+          vitorias: calcularPosicaoRanking(
+            lista,
+            jogadorCarregado.id,
+            'vitorias',
+          ),
+        })
+      }
+    }
 
     setCarregando(false)
   }, [sessao?.user.id])
@@ -870,6 +999,16 @@ function MeuPerfil() {
                       <strong className="mt-1 block text-3xl">
                         {jogador.gols}
                       </strong>
+
+                      <span
+                        className={`mt-4 inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${classePosicaoRanking(
+                          posicoesRanking.gols,
+                        )}`}
+                      >
+                        {textoPosicaoRanking(
+                          posicoesRanking.gols,
+                        )}
+                      </span>
                     </article>
 
                     <article className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
@@ -884,6 +1023,16 @@ function MeuPerfil() {
                       <strong className="mt-1 block text-3xl">
                         {jogador.assistencias}
                       </strong>
+
+                      <span
+                        className={`mt-4 inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${classePosicaoRanking(
+                          posicoesRanking.assistencias,
+                        )}`}
+                      >
+                        {textoPosicaoRanking(
+                          posicoesRanking.assistencias,
+                        )}
+                      </span>
                     </article>
 
                     <article className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
@@ -898,6 +1047,16 @@ function MeuPerfil() {
                       <strong className="mt-1 block text-3xl">
                         {jogador.vitorias}
                       </strong>
+
+                      <span
+                        className={`mt-4 inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${classePosicaoRanking(
+                          posicoesRanking.vitorias,
+                        )}`}
+                      >
+                        {textoPosicaoRanking(
+                          posicoesRanking.vitorias,
+                        )}
+                      </span>
                     </article>
 
                     <article className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
