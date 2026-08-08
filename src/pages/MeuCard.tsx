@@ -105,6 +105,231 @@ const ATRIBUTOS: {
   },
 ]
 
+type PosicaoCard =
+  | 'GOL'
+  | 'ZAG'
+  | 'LE'
+  | 'LD'
+  | 'VOL'
+  | 'MC'
+  | 'MEI'
+  | 'PE'
+  | 'PD'
+  | 'ATA'
+
+type PesosOverall = Record<
+  AtributoCard,
+  number
+>
+
+const PESOS_POR_POSICAO: Record<
+  PosicaoCard,
+  PesosOverall
+> = {
+  ATA: {
+    pac: 0.15,
+    sho: 0.30,
+    pas: 0.10,
+    dri: 0.20,
+    def: 0.05,
+    phy: 0.20,
+  },
+
+  PE: {
+    pac: 0.25,
+    sho: 0.20,
+    pas: 0.15,
+    dri: 0.25,
+    def: 0.05,
+    phy: 0.10,
+  },
+
+  PD: {
+    pac: 0.25,
+    sho: 0.20,
+    pas: 0.15,
+    dri: 0.25,
+    def: 0.05,
+    phy: 0.10,
+  },
+
+  MEI: {
+    pac: 0.10,
+    sho: 0.15,
+    pas: 0.30,
+    dri: 0.25,
+    def: 0.05,
+    phy: 0.15,
+  },
+
+  MC: {
+    pac: 0.10,
+    sho: 0.10,
+    pas: 0.30,
+    dri: 0.20,
+    def: 0.15,
+    phy: 0.15,
+  },
+
+  VOL: {
+    pac: 0.10,
+    sho: 0.05,
+    pas: 0.20,
+    dri: 0.10,
+    def: 0.30,
+    phy: 0.25,
+  },
+
+  LE: {
+    pac: 0.20,
+    sho: 0.05,
+    pas: 0.20,
+    dri: 0.15,
+    def: 0.25,
+    phy: 0.15,
+  },
+
+  LD: {
+    pac: 0.20,
+    sho: 0.05,
+    pas: 0.20,
+    dri: 0.15,
+    def: 0.25,
+    phy: 0.15,
+  },
+
+  ZAG: {
+    pac: 0.05,
+    sho: 0.05,
+    pas: 0.10,
+    dri: 0.05,
+    def: 0.40,
+    phy: 0.35,
+  },
+
+  /*
+   * Provisório para goleiro enquanto o sistema
+   * ainda usa os mesmos seis atributos dos
+   * jogadores de linha.
+   */
+  GOL: {
+    pac: 0.05,
+    sho: 0.02,
+    pas: 0.18,
+    dri: 0.05,
+    def: 0.45,
+    phy: 0.25,
+  },
+}
+
+const PESOS_PADRAO: PesosOverall = {
+  pac: 1 / 6,
+  sho: 1 / 6,
+  pas: 1 / 6,
+  dri: 1 / 6,
+  def: 1 / 6,
+  phy: 1 / 6,
+}
+
+function calcularOverall(
+  card: MeuCardDados,
+) {
+  const posicao = card.posicao as
+    | PosicaoCard
+    | null
+
+  const pesos =
+    posicao &&
+    PESOS_POR_POSICAO[posicao]
+      ? PESOS_POR_POSICAO[posicao]
+      : PESOS_PADRAO
+
+  const valor =
+    card.pac * pesos.pac +
+    card.sho * pesos.sho +
+    card.pas * pesos.pas +
+    card.dri * pesos.dri +
+    card.def * pesos.def +
+    card.phy * pesos.phy
+
+  return Math.round(valor)
+}
+
+type NivelCard =
+  | 'bronze'
+  | 'prata'
+  | 'ouro'
+
+function obterNivelCard(
+  overall: number,
+): NivelCard {
+  if (overall >= 70) {
+    return 'ouro'
+  }
+
+  if (overall >= 60) {
+    return 'prata'
+  }
+
+  return 'bronze'
+}
+
+const TEMAS_CARD = {
+  bronze: {
+    nome: 'Bronze',
+    card:
+      'border-amber-700/70 bg-gradient-to-b from-amber-950 via-stone-900 to-slate-950 shadow-amber-950/40',
+    brilhoSuperior:
+      'bg-amber-500/15',
+    brilhoInferior:
+      'bg-orange-700/10',
+    destaque:
+      'text-amber-400',
+    bordaSuave:
+      'border-amber-700/35',
+    fundoIcone:
+      'border-amber-600/30 bg-amber-700/15 text-amber-300',
+    selo:
+      'border-amber-600/30 bg-amber-700/15 text-amber-300',
+  },
+
+  prata: {
+    nome: 'Prata',
+    card:
+      'border-slate-300/70 bg-gradient-to-b from-slate-500 via-slate-800 to-slate-950 shadow-slate-400/20',
+    brilhoSuperior:
+      'bg-white/15',
+    brilhoInferior:
+      'bg-slate-300/10',
+    destaque:
+      'text-slate-100',
+    bordaSuave:
+      'border-slate-300/35',
+    fundoIcone:
+      'border-slate-300/35 bg-slate-200/10 text-slate-100',
+    selo:
+      'border-slate-300/35 bg-slate-200/10 text-slate-100',
+  },
+
+  ouro: {
+    nome: 'Ouro',
+    card:
+      'border-yellow-400/80 bg-gradient-to-b from-yellow-900 via-amber-950 to-slate-950 shadow-yellow-900/35',
+    brilhoSuperior:
+      'bg-yellow-300/20',
+    brilhoInferior:
+      'bg-amber-500/15',
+    destaque:
+      'text-yellow-300',
+    bordaSuave:
+      'border-yellow-400/35',
+    fundoIcone:
+      'border-yellow-300/35 bg-yellow-400/10 text-yellow-300',
+    selo:
+      'border-yellow-300/35 bg-yellow-400/10 text-yellow-300',
+  },
+} as const
+
 function MeuCard() {
   const [card, setCard] =
     useState<MeuCardDados | null>(null)
@@ -177,16 +402,16 @@ function MeuCard() {
       return 50
     }
 
-    const soma =
-      card.pac +
-      card.sho +
-      card.pas +
-      card.dri +
-      card.def +
-      card.phy
-
-    return Math.round(soma / 6)
+    return calcularOverall(card)
   }, [card])
+
+  const nivelCard = useMemo(
+    () => obterNivelCard(overall),
+    [overall],
+  )
+
+  const temaCard =
+    TEMAS_CARD[nivelCard]
 
   async function salvarDadosBasicos() {
     if (!posicao || !peDominante) {
@@ -409,23 +634,29 @@ function MeuCard() {
 
         <div className="grid gap-6 xl:grid-cols-[390px_1fr]">
           <section className="self-start">
-            <div className="relative mx-auto max-w-[360px] overflow-hidden rounded-[32px] border border-cyan-400/30 bg-gradient-to-b from-cyan-950 via-slate-900 to-slate-950 p-6 shadow-2xl shadow-cyan-950/30">
-              <div className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-cyan-400/10 blur-3xl" />
-              <div className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-emerald-400/10 blur-3xl" />
+            <div className={`relative mx-auto max-w-[360px] overflow-hidden rounded-[32px] border p-6 shadow-2xl transition-all duration-500 ${temaCard.card}`}>
+              <div className={`pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full blur-3xl ${temaCard.brilhoSuperior}`} />
+              <div className={`pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full blur-3xl ${temaCard.brilhoInferior}`} />
 
               <div className="relative">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-5xl font-black tracking-tight text-cyan-300">
+                    <p className={`text-5xl font-black tracking-tight ${temaCard.destaque}`}>
                       {overall}
                     </p>
 
                     <p className="mt-1 text-lg font-bold text-white">
                       {card.posicao || 'POS'}
                     </p>
+
+                    <span
+                      className={`mt-3 inline-flex rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${temaCard.selo}`}
+                    >
+                      {temaCard.nome}
+                    </span>
                   </div>
 
-                  <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/10 p-3 text-cyan-300">
+                  <div className={`rounded-xl border p-3 ${temaCard.fundoIcone}`}>
                     <CreditCard size={28} />
                   </div>
                 </div>
@@ -480,7 +711,7 @@ function MeuCard() {
                   </div>
                 </div>
 
-                <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-3 border-t border-cyan-400/20 pt-5">
+                <div className={`mt-6 grid grid-cols-2 gap-x-8 gap-y-3 border-t pt-5 ${temaCard.bordaSuave}`}>
                   {ATRIBUTOS.map(
                     ({
                       chave,
@@ -494,7 +725,7 @@ function MeuCard() {
                           {card[chave]}
                         </span>
 
-                        <span className="text-sm font-bold tracking-wider text-cyan-300">
+                        <span className={`text-sm font-bold tracking-wider ${temaCard.destaque}`}>
                           {sigla}
                         </span>
                       </div>
@@ -502,7 +733,7 @@ function MeuCard() {
                   )}
                 </div>
 
-                <div className="mt-6 grid grid-cols-2 gap-3 border-t border-cyan-400/20 pt-5 text-xs">
+                <div className={`mt-6 grid grid-cols-2 gap-3 border-t pt-5 text-xs ${temaCard.bordaSuave}`}>
                   <div>
                     <p className="text-slate-500">
                       Pé dominante
@@ -529,7 +760,7 @@ function MeuCard() {
             </div>
 
             <p className="mx-auto mt-3 max-w-[360px] text-center text-xs leading-5 text-slate-500">
-              Overall provisório calculado pela média dos seis atributos.
+              Overall calculado por média ponderada conforme a posição. Bronze: 50–59, Prata: 60–69 e Ouro: 70+.
             </p>
           </section>
 
@@ -766,6 +997,56 @@ function MeuCard() {
                   },
                 )}
               </div>
+            </article>
+
+            <article className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+              <h3 className="text-xl font-bold">
+                Como o Overall é calculado
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                O Overall considera sua posição. Atributos mais importantes
+                para a função em campo têm peso maior no cálculo.
+              </p>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-amber-700/25 bg-amber-900/10 p-4">
+                  <p className="text-xs uppercase tracking-wider text-amber-500">
+                    Bronze
+                  </p>
+
+                  <strong className="mt-1 block text-xl text-amber-300">
+                    50–59 OVR
+                  </strong>
+                </div>
+
+                <div className="rounded-xl border border-slate-400/25 bg-slate-400/10 p-4">
+                  <p className="text-xs uppercase tracking-wider text-slate-400">
+                    Prata
+                  </p>
+
+                  <strong className="mt-1 block text-xl text-slate-100">
+                    60–69 OVR
+                  </strong>
+                </div>
+
+                <div className="rounded-xl border border-yellow-400/25 bg-yellow-400/10 p-4">
+                  <p className="text-xs uppercase tracking-wider text-yellow-400">
+                    Ouro
+                  </p>
+
+                  <strong className="mt-1 block text-xl text-yellow-300">
+                    70+ OVR
+                  </strong>
+                </div>
+              </div>
+
+              {!card.posicao && (
+                <p className="mt-4 rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-200">
+                  Enquanto você não escolher uma posição, o sistema usa a
+                  média simples dos seis atributos.
+                </p>
+              )}
             </article>
 
             <article className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
