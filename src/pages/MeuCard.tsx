@@ -16,14 +16,17 @@ import {
 } from 'react'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
-
-type AtributoCard =
-  | 'pac'
-  | 'sho'
-  | 'pas'
-  | 'dri'
-  | 'def'
-  | 'phy'
+import {
+  ATRIBUTOS_CARD,
+  FAIXAS_NIVEL_CARD,
+  POSICOES_CARD,
+  calcularOverall,
+  obterNivelCard,
+  type AtributoCard,
+} from '../utils/overall'
+import {
+  REGRAS_EVOLUCAO_CARD,
+} from '../utils/pontuacao'
 
 type MeuCardDados = {
   jogador_id: number
@@ -51,235 +54,13 @@ type MeuCardDados = {
   pontos_disponiveis: number
 }
 
-const POSICOES = [
-  'GOL',
-  'ZAG',
-  'LE',
-  'LD',
-  'VOL',
-  'MC',
-  'MEI',
-  'PE',
-  'PD',
-  'ATA',
-] as const
-
 const PES_DOMINANTES = [
   'Direito',
   'Esquerdo',
   'Ambidestro',
 ] as const
 
-const ATRIBUTOS: {
-  chave: AtributoCard
-  sigla: string
-  nome: string
-}[] = [
-  {
-    chave: 'pac',
-    sigla: 'PAC',
-    nome: 'Corrida',
-  },
-  {
-    chave: 'sho',
-    sigla: 'SHO',
-    nome: 'Chute',
-  },
-  {
-    chave: 'pas',
-    sigla: 'PAS',
-    nome: 'Passe',
-  },
-  {
-    chave: 'dri',
-    sigla: 'DRI',
-    nome: 'Drible',
-  },
-  {
-    chave: 'def',
-    sigla: 'DEF',
-    nome: 'Defesa',
-  },
-  {
-    chave: 'phy',
-    sigla: 'PHY',
-    nome: 'Físico',
-  },
-]
 
-type PosicaoCard =
-  | 'GOL'
-  | 'ZAG'
-  | 'LE'
-  | 'LD'
-  | 'VOL'
-  | 'MC'
-  | 'MEI'
-  | 'PE'
-  | 'PD'
-  | 'ATA'
-
-type PesosOverall = Record<
-  AtributoCard,
-  number
->
-
-const PESOS_POR_POSICAO: Record<
-  PosicaoCard,
-  PesosOverall
-> = {
-  ATA: {
-    pac: 0.15,
-    sho: 0.30,
-    pas: 0.10,
-    dri: 0.20,
-    def: 0.05,
-    phy: 0.20,
-  },
-
-  PE: {
-    pac: 0.25,
-    sho: 0.20,
-    pas: 0.15,
-    dri: 0.25,
-    def: 0.05,
-    phy: 0.10,
-  },
-
-  PD: {
-    pac: 0.25,
-    sho: 0.20,
-    pas: 0.15,
-    dri: 0.25,
-    def: 0.05,
-    phy: 0.10,
-  },
-
-  MEI: {
-    pac: 0.10,
-    sho: 0.15,
-    pas: 0.30,
-    dri: 0.25,
-    def: 0.05,
-    phy: 0.15,
-  },
-
-  MC: {
-    pac: 0.10,
-    sho: 0.10,
-    pas: 0.30,
-    dri: 0.20,
-    def: 0.15,
-    phy: 0.15,
-  },
-
-  VOL: {
-    pac: 0.10,
-    sho: 0.05,
-    pas: 0.20,
-    dri: 0.10,
-    def: 0.30,
-    phy: 0.25,
-  },
-
-  LE: {
-    pac: 0.20,
-    sho: 0.05,
-    pas: 0.20,
-    dri: 0.15,
-    def: 0.25,
-    phy: 0.15,
-  },
-
-  LD: {
-    pac: 0.20,
-    sho: 0.05,
-    pas: 0.20,
-    dri: 0.15,
-    def: 0.25,
-    phy: 0.15,
-  },
-
-  ZAG: {
-    pac: 0.05,
-    sho: 0.05,
-    pas: 0.10,
-    dri: 0.05,
-    def: 0.40,
-    phy: 0.35,
-  },
-
-  /*
-   * Provisório para goleiro enquanto o sistema
-   * ainda usa os mesmos seis atributos dos
-   * jogadores de linha.
-   */
-  GOL: {
-    pac: 0.05,
-    sho: 0.02,
-    pas: 0.18,
-    dri: 0.05,
-    def: 0.45,
-    phy: 0.25,
-  },
-}
-
-const PESOS_PADRAO: PesosOverall = {
-  pac: 1 / 6,
-  sho: 1 / 6,
-  pas: 1 / 6,
-  dri: 1 / 6,
-  def: 1 / 6,
-  phy: 1 / 6,
-}
-
-function calcularOverall(
-  card: MeuCardDados,
-) {
-  const posicao = card.posicao as
-    | PosicaoCard
-    | null
-
-  const pesos =
-    posicao &&
-    PESOS_POR_POSICAO[posicao]
-      ? PESOS_POR_POSICAO[posicao]
-      : PESOS_PADRAO
-
-  const valor =
-    card.pac * pesos.pac +
-    card.sho * pesos.sho +
-    card.pas * pesos.pas +
-    card.dri * pesos.dri +
-    card.def * pesos.def +
-    card.phy * pesos.phy
-
-  return Math.round(valor)
-}
-
-type NivelCard =
-  | 'bronze'
-  | 'prata'
-  | 'ouro'
-  | 'legend'
-
-function obterNivelCard(
-  overall: number,
-): NivelCard {
-  if (overall >= 90) {
-    return 'legend'
-  }
-
-  if (overall >= 80) {
-    return 'ouro'
-  }
-
-  if (overall >= 70) {
-    return 'prata'
-  }
-
-  return 'bronze'
-}
 
 const TEMAS_CARD = {
   bronze: {
@@ -578,7 +359,7 @@ function MeuCard() {
       return
     }
 
-    const info = ATRIBUTOS.find(
+    const info = ATRIBUTOS_CARD.find(
       (item) => item.chave === atributo,
     )
 
@@ -835,7 +616,7 @@ function MeuCard() {
                 </div>
 
                 <div className={`mt-6 grid grid-cols-2 gap-x-8 gap-y-3 border-t pt-5 ${temaCard.bordaSuave}`}>
-                  {ATRIBUTOS.map(
+                  {ATRIBUTOS_CARD.map(
                     ({
                       chave,
                       sigla,
@@ -883,7 +664,7 @@ function MeuCard() {
             </div>
 
             <p className="mx-auto mt-3 max-w-[360px] text-center text-xs leading-5 text-slate-500">
-              Overall calculado por média ponderada conforme a posição. Bronze: 50–69, Prata: 70–79, Ouro: 80–89 e Legend: 90+.
+              Overall calculado por média ponderada conforme a posição. Bronze: {FAIXAS_NIVEL_CARD.bronze}, Prata: {FAIXAS_NIVEL_CARD.prata}, Ouro: {FAIXAS_NIVEL_CARD.ouro} e Legend: {FAIXAS_NIVEL_CARD.legend}.
             </p>
           </section>
 
@@ -957,7 +738,7 @@ function MeuCard() {
                       Selecione
                     </option>
 
-                    {POSICOES.map(
+                    {POSICOES_CARD.map(
                       (item) => (
                         <option
                           key={item}
@@ -1089,7 +870,7 @@ function MeuCard() {
               )}
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                {ATRIBUTOS.map(
+                {ATRIBUTOS_CARD.map(
                   ({
                     chave,
                     sigla,
@@ -1180,7 +961,7 @@ function MeuCard() {
                   </p>
 
                   <strong className="mt-1 block text-xl text-amber-300">
-                    50–69 OVR
+                    {FAIXAS_NIVEL_CARD.bronze} OVR
                   </strong>
                 </div>
 
@@ -1190,7 +971,7 @@ function MeuCard() {
                   </p>
 
                   <strong className="mt-1 block text-xl text-slate-100">
-                    70–79 OVR
+                    {FAIXAS_NIVEL_CARD.prata} OVR
                   </strong>
                 </div>
 
@@ -1200,7 +981,7 @@ function MeuCard() {
                   </p>
 
                   <strong className="mt-1 block text-xl text-yellow-300">
-                    80–89 OVR
+                    {FAIXAS_NIVEL_CARD.ouro} OVR
                   </strong>
                 </div>
 
@@ -1217,7 +998,7 @@ function MeuCard() {
                   </div>
 
                   <strong className="mt-1 block text-xl text-yellow-200">
-                    90+ OVR
+                    {FAIXAS_NIVEL_CARD.legend} OVR
                   </strong>
                 </div>
               </div>
@@ -1238,7 +1019,7 @@ function MeuCard() {
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-xl bg-slate-950/50 p-4">
                   <strong className="text-emerald-400">
-                    3 gols
+                    {REGRAS_EVOLUCAO_CARD.golsPorPonto} gols
                   </strong>
                   <p className="mt-1 text-sm text-slate-500">
                     +1 ponto
@@ -1247,7 +1028,7 @@ function MeuCard() {
 
                 <div className="rounded-xl bg-slate-950/50 p-4">
                   <strong className="text-purple-400">
-                    3 assistências
+                    {REGRAS_EVOLUCAO_CARD.assistenciasPorPonto} assistências
                   </strong>
                   <p className="mt-1 text-sm text-slate-500">
                     +1 ponto
@@ -1256,7 +1037,7 @@ function MeuCard() {
 
                 <div className="rounded-xl bg-slate-950/50 p-4">
                   <strong className="text-amber-400">
-                    3 vitórias
+                    {REGRAS_EVOLUCAO_CARD.vitoriasPorPonto} vitórias
                   </strong>
                   <p className="mt-1 text-sm text-slate-500">
                     +1 ponto

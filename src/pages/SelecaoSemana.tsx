@@ -17,6 +17,13 @@ import {
 import { Link } from 'react-router'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
+import {
+  calcularOverall,
+  obterNivelCard,
+} from '../utils/overall'
+import {
+  PESOS_PONTUACAO_GERAL,
+} from '../utils/pontuacao'
 
 type JogadorSelecao = {
   colocacao: number
@@ -48,151 +55,10 @@ type DadosSelecao = {
   jogadores: JogadorSelecao[]
 }
 
-type Atributo =
-  | 'pac'
-  | 'sho'
-  | 'pas'
-  | 'dri'
-  | 'def'
-  | 'phy'
-
-type Pesos = Record<Atributo, number>
-
-const PESOS_POR_POSICAO: Record<
-  string,
-  Pesos
-> = {
-  ATA: {
-    pac: 0.15,
-    sho: 0.3,
-    pas: 0.1,
-    dri: 0.2,
-    def: 0.05,
-    phy: 0.2,
-  },
-
-  PE: {
-    pac: 0.25,
-    sho: 0.2,
-    pas: 0.15,
-    dri: 0.25,
-    def: 0.05,
-    phy: 0.1,
-  },
-
-  PD: {
-    pac: 0.25,
-    sho: 0.2,
-    pas: 0.15,
-    dri: 0.25,
-    def: 0.05,
-    phy: 0.1,
-  },
-
-  MEI: {
-    pac: 0.1,
-    sho: 0.15,
-    pas: 0.3,
-    dri: 0.25,
-    def: 0.05,
-    phy: 0.15,
-  },
-
-  MC: {
-    pac: 0.1,
-    sho: 0.1,
-    pas: 0.3,
-    dri: 0.2,
-    def: 0.15,
-    phy: 0.15,
-  },
-
-  VOL: {
-    pac: 0.1,
-    sho: 0.05,
-    pas: 0.2,
-    dri: 0.1,
-    def: 0.3,
-    phy: 0.25,
-  },
-
-  LE: {
-    pac: 0.2,
-    sho: 0.05,
-    pas: 0.2,
-    dri: 0.15,
-    def: 0.25,
-    phy: 0.15,
-  },
-
-  LD: {
-    pac: 0.2,
-    sho: 0.05,
-    pas: 0.2,
-    dri: 0.15,
-    def: 0.25,
-    phy: 0.15,
-  },
-
-  ZAG: {
-    pac: 0.05,
-    sho: 0.05,
-    pas: 0.1,
-    dri: 0.05,
-    def: 0.4,
-    phy: 0.35,
-  },
-
-  GOL: {
-    pac: 0.05,
-    sho: 0.02,
-    pas: 0.18,
-    dri: 0.05,
-    def: 0.45,
-    phy: 0.25,
-  },
-}
-
-const PESOS_PADRAO: Pesos = {
-  pac: 1 / 6,
-  sho: 1 / 6,
-  pas: 1 / 6,
-  dri: 1 / 6,
-  def: 1 / 6,
-  phy: 1 / 6,
-}
-
-function calcularOverall(
-  jogador: JogadorSelecao,
-) {
-  const atributos = {
-    pac: jogador.pac ?? 50,
-    sho: jogador.sho ?? 50,
-    pas: jogador.pas ?? 50,
-    dri: jogador.dri ?? 50,
-    def: jogador.def ?? 50,
-    phy: jogador.phy ?? 50,
-  }
-
-  const pesos =
-    (jogador.posicao &&
-      PESOS_POR_POSICAO[
-        jogador.posicao
-      ]) ||
-    PESOS_PADRAO
-
-  return Math.round(
-    atributos.pac * pesos.pac +
-      atributos.sho * pesos.sho +
-      atributos.pas * pesos.pas +
-      atributos.dri * pesos.dri +
-      atributos.def * pesos.def +
-      atributos.phy * pesos.phy,
-  )
-}
-
 function temaDoCard(overall: number) {
-  if (overall >= 90) {
+  const nivel = obterNivelCard(overall)
+
+  if (nivel === 'legend') {
     return {
       nome: 'LEGEND',
       card:
@@ -204,7 +70,7 @@ function temaDoCard(overall: number) {
     }
   }
 
-  if (overall >= 80) {
+  if (nivel === 'ouro') {
     return {
       nome: 'OURO',
       card:
@@ -216,7 +82,7 @@ function temaDoCard(overall: number) {
     }
   }
 
-  if (overall >= 70) {
+  if (nivel === 'prata') {
     return {
       nome: 'PRATA',
       card:
@@ -573,15 +439,15 @@ function SelecaoSemana() {
             </span>
 
             <span className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-300">
-              Vitória 5 pts
+              Vitória {PESOS_PONTUACAO_GERAL.vitoria} pts
             </span>
 
             <span className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-300">
-              Gol 3 pts
+              Gol {PESOS_PONTUACAO_GERAL.gol} pts
             </span>
 
             <span className="rounded-xl border border-purple-500/20 bg-purple-500/10 px-4 py-2 text-xs font-semibold text-purple-300">
-              Assistência 2 pts
+              Assistência {PESOS_PONTUACAO_GERAL.assistencia} pts
             </span>
           </section>
         )}

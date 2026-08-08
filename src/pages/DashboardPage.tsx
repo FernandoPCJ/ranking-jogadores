@@ -14,6 +14,10 @@ import {
   useJogadores,
   type Jogador,
 } from '../hooks/useJogadores'
+import {
+  PESOS_PONTUACAO_GERAL,
+  calcularPontuacaoGeral,
+} from '../utils/pontuacao'
 
 type CampoRanking =
   | 'gols'
@@ -189,20 +193,6 @@ function CardTop3({
         )}
       </div>
     </article>
-  )
-}
-
-const PESO_VITORIA = 5
-const PESO_GOL = 3
-const PESO_ASSISTENCIA = 2
-
-function calcularPontuacaoGeral(
-  jogador: Jogador,
-) {
-  return (
-    jogador.vitorias * PESO_VITORIA +
-    jogador.gols * PESO_GOL +
-    jogador.assistencias * PESO_ASSISTENCIA
   )
 }
 
@@ -398,15 +388,15 @@ function DashboardPage() {
 
                   <div className="mt-3 flex flex-wrap gap-2 text-xs">
                     <span className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 font-semibold text-amber-300">
-                      Vitória = {PESO_VITORIA} pts
+                      Vitória = {PESOS_PONTUACAO_GERAL.vitoria} pts
                     </span>
 
                     <span className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 font-semibold text-emerald-300">
-                      Gol = {PESO_GOL} pts
+                      Gol = {PESOS_PONTUACAO_GERAL.gol} pts
                     </span>
 
                     <span className="rounded-lg border border-purple-500/20 bg-purple-500/10 px-2.5 py-1 font-semibold text-purple-300">
-                      Assistência = {PESO_ASSISTENCIA} pts
+                      Assistência = {PESOS_PONTUACAO_GERAL.assistencia} pts
                     </span>
                   </div>
                 </div>
