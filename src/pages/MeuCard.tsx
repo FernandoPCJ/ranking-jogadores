@@ -1,6 +1,7 @@
 import {
   AlertCircle,
   CreditCard,
+  Lock,
   Plus,
   RefreshCw,
   Save,
@@ -413,11 +414,31 @@ function MeuCard() {
   const temaCard =
     TEMAS_CARD[nivelCard]
 
+  const cardConfigurado = Boolean(
+    card?.posicao &&
+      card?.pe_dominante,
+  )
+
   async function salvarDadosBasicos() {
+    if (cardConfigurado) {
+      setErro(
+        'Sua posição e seu pé dominante já foram definidos e estão bloqueados.',
+      )
+      return
+    }
+
     if (!posicao || !peDominante) {
       setErro(
         'Escolha a posição e o pé dominante antes de salvar.',
       )
+      return
+    }
+
+    const confirmou = window.confirm(
+      `Confirmar posição ${posicao} e pé dominante ${peDominante}?\n\nDepois da confirmação, essas escolhas ficarão bloqueadas e não poderão ser alteradas pelo jogador.`,
+    )
+
+    if (!confirmou) {
       return
     }
 
@@ -440,7 +461,8 @@ function MeuCard() {
       )
 
       setErro(
-        'Não foi possível salvar posição e pé dominante.',
+        error.message ||
+          'Não foi possível salvar posição e pé dominante.',
       )
       setSalvandoBasico(false)
       return
@@ -460,7 +482,7 @@ function MeuCard() {
     }
 
     setMensagem(
-      'Informações do card atualizadas com sucesso.',
+      'Posição e pé dominante confirmados. A evolução dos atributos foi liberada.',
     )
     setSalvandoBasico(false)
   }
@@ -469,6 +491,13 @@ function MeuCard() {
     atributo: AtributoCard,
   ) {
     if (!card) {
+      return
+    }
+
+    if (!cardConfigurado) {
+      setErro(
+        'Defina e confirme sua posição e seu pé dominante antes de evoluir os atributos.',
+      )
       return
     }
 
@@ -804,7 +833,9 @@ function MeuCard() {
                 </h3>
 
                 <p className="mt-1 text-sm text-slate-400">
-                  Escolha sua posição e seu pé dominante.
+                  {cardConfigurado
+                    ? 'Suas escolhas foram confirmadas e estão bloqueadas.'
+                    : 'Escolha sua posição e seu pé dominante. Após confirmar, não será possível alterá-los.'}
                 </p>
               </div>
 
@@ -820,12 +851,13 @@ function MeuCard() {
                   <select
                     id="posicao-card"
                     value={posicao}
+                    disabled={cardConfigurado}
                     onChange={(event) =>
                       setPosicao(
                         event.target.value,
                       )
                     }
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 disabled:cursor-not-allowed disabled:border-slate-800 disabled:bg-slate-900 disabled:text-slate-500"
                   >
                     <option value="">
                       Selecione
@@ -855,12 +887,13 @@ function MeuCard() {
                   <select
                     id="pe-card"
                     value={peDominante}
+                    disabled={cardConfigurado}
                     onChange={(event) =>
                       setPeDominante(
                         event.target.value,
                       )
                     }
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 disabled:cursor-not-allowed disabled:border-slate-800 disabled:bg-slate-900 disabled:text-slate-500"
                   >
                     <option value="">
                       Selecione
@@ -880,28 +913,47 @@ function MeuCard() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={salvarDadosBasicos}
-                disabled={
-                  salvandoBasico ||
-                  !posicao ||
-                  !peDominante
-                }
-                className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {salvandoBasico ? (
-                  <>
-                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-700/30 border-t-slate-950" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Save size={18} />
-                    Salvar informações
-                  </>
-                )}
-              </button>
+              {cardConfigurado ? (
+                <div className="mt-5 flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-4">
+                  <Lock
+                    size={20}
+                    className="mt-0.5 shrink-0 text-emerald-400"
+                  />
+
+                  <div>
+                    <p className="font-semibold text-emerald-300">
+                      Escolhas confirmadas
+                    </p>
+
+                    <p className="mt-1 text-sm leading-5 text-emerald-200/70">
+                      Posição e pé dominante estão bloqueados. Caso seja necessária uma correção excepcional, ela deverá ser feita pelo administrador.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={salvarDadosBasicos}
+                  disabled={
+                    salvandoBasico ||
+                    !posicao ||
+                    !peDominante
+                  }
+                  className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {salvandoBasico ? (
+                    <>
+                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-700/30 border-t-slate-950" />
+                      Confirmando...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} />
+                      Confirmar escolhas
+                    </>
+                  )}
+                </button>
+              )}
             </article>
 
             <article className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
@@ -912,7 +964,9 @@ function MeuCard() {
                   </h3>
 
                   <p className="mt-1 text-sm text-slate-400">
-                    Cada melhoria consome 1 ponto disponível.
+                    {cardConfigurado
+                      ? 'Cada melhoria consome 1 ponto disponível.'
+                      : 'A evolução fica bloqueada até você confirmar posição e pé dominante.'}
                   </p>
                 </div>
 
@@ -926,6 +980,19 @@ function MeuCard() {
                   </strong>
                 </div>
               </div>
+
+              {!cardConfigurado && (
+                <div className="mt-5 flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-4">
+                  <Lock
+                    size={20}
+                    className="mt-0.5 shrink-0 text-amber-400"
+                  />
+
+                  <p className="text-sm leading-5 text-amber-200">
+                    Defina e confirme sua posição e seu pé dominante para liberar os botões de evolução.
+                  </p>
+                </div>
+              )}
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 {ATRIBUTOS.map(
@@ -972,17 +1039,20 @@ function MeuCard() {
                             gastarPonto(chave)
                           }
                           disabled={
+                            !cardConfigurado ||
                             noMaximo ||
                             semPontos ||
                             atributoAtualizando !==
                               null
                           }
                           title={
-                            noMaximo
-                              ? 'Atributo no máximo'
-                              : semPontos
-                                ? 'Sem pontos disponíveis'
-                                : `Aumentar ${sigla}`
+                            !cardConfigurado
+                              ? 'Confirme posição e pé dominante primeiro'
+                              : noMaximo
+                                ? 'Atributo no máximo'
+                                : semPontos
+                                  ? 'Sem pontos disponíveis'
+                                  : `Aumentar ${sigla}`
                           }
                           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-600"
                         >
