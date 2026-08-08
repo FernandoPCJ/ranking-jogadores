@@ -1238,7 +1238,7 @@ function MeuCard() {
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-xl bg-slate-950/50 p-4">
                   <strong className="text-emerald-400">
-                    5 gols
+                    3 gols
                   </strong>
                   <p className="mt-1 text-sm text-slate-500">
                     +1 ponto
@@ -1247,7 +1247,7 @@ function MeuCard() {
 
                 <div className="rounded-xl bg-slate-950/50 p-4">
                   <strong className="text-purple-400">
-                    5 assistências
+                    3 assistências
                   </strong>
                   <p className="mt-1 text-sm text-slate-500">
                     +1 ponto
