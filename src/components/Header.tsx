@@ -1,4 +1,5 @@
 import {
+  CalendarDays,
   CreditCard,
   Goal,
   Handshake,
@@ -8,6 +9,7 @@ import {
   Star,
   Trophy,
   UserRound,
+  UsersRound,
 } from 'lucide-react'
 import { useState } from 'react'
 import {
@@ -43,13 +45,19 @@ const links = [
     nome: 'Estrelas',
     Icone: Star,
   },
+  {
+    caminho: '/selecao-da-semana',
+    nome: 'Seleção',
+    Icone: UsersRound,
+  },
 ]
 
 function Header() {
   const navigate = useNavigate()
   const { perfil } = useAuth()
 
-  const [saindo, setSaindo] = useState(false)
+  const [saindo, setSaindo] =
+    useState(false)
 
   const linksVisiveis = [
     ...links,
@@ -72,7 +80,14 @@ function Header() {
     ...(perfil?.tipo === 'admin'
       ? [
           {
-            caminho: '/admin/jogadores',
+            caminho:
+              '/admin/registrar-racha',
+            nome: 'Racha',
+            Icone: CalendarDays,
+          },
+          {
+            caminho:
+              '/admin/jogadores',
             nome: 'Admin',
             Icone: Settings,
           },
@@ -95,11 +110,14 @@ function Header() {
         'Erro ao encerrar sessão:',
         error,
       )
+
       setSaindo(false)
       return
     }
 
-    navigate('/', { replace: true })
+    navigate('/', {
+      replace: true,
+    })
   }
 
   return (
