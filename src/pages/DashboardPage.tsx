@@ -192,6 +192,20 @@ function CardTop3({
   )
 }
 
+const PESO_VITORIA = 5
+const PESO_GOL = 3
+const PESO_ASSISTENCIA = 2
+
+function calcularPontuacaoGeral(
+  jogador: Jogador,
+) {
+  return (
+    jogador.vitorias * PESO_VITORIA +
+    jogador.gols * PESO_GOL +
+    jogador.assistencias * PESO_ASSISTENCIA
+  )
+}
+
 function classePosicaoTabela(indice: number) {
   if (indice === 0) {
     return 'border-amber-500/30 bg-amber-500/15 text-amber-400'
@@ -218,6 +232,27 @@ function DashboardPage() {
 
   const rankingGeral = [...jogadores].sort(
     (jogadorA, jogadorB) => {
+      const pontosA =
+        calcularPontuacaoGeral(jogadorA)
+
+      const pontosB =
+        calcularPontuacaoGeral(jogadorB)
+
+      const diferencaPontos =
+        pontosB - pontosA
+
+      if (diferencaPontos !== 0) {
+        return diferencaPontos
+      }
+
+      const diferencaVitorias =
+        jogadorB.vitorias -
+        jogadorA.vitorias
+
+      if (diferencaVitorias !== 0) {
+        return diferencaVitorias
+      }
+
       const diferencaGols =
         jogadorB.gols - jogadorA.gols
 
@@ -231,13 +266,6 @@ function DashboardPage() {
 
       if (diferencaAssistencias !== 0) {
         return diferencaAssistencias
-      }
-
-      const diferencaVitorias =
-        jogadorB.vitorias - jogadorA.vitorias
-
-      if (diferencaVitorias !== 0) {
-        return diferencaVitorias
       }
 
       return jogadorA.nome.localeCompare(
@@ -364,9 +392,23 @@ function DashboardPage() {
                   </h3>
 
                   <p className="mt-1 text-sm text-slate-400">
-                    Classificação organizada pela quantidade
-                    de gols.
+                    Classificação baseada no desempenho geral
+                    de cada jogador.
                   </p>
+
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                    <span className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 font-semibold text-amber-300">
+                      Vitória = {PESO_VITORIA} pts
+                    </span>
+
+                    <span className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 font-semibold text-emerald-300">
+                      Gol = {PESO_GOL} pts
+                    </span>
+
+                    <span className="rounded-lg border border-purple-500/20 bg-purple-500/10 px-2.5 py-1 font-semibold text-purple-300">
+                      Assistência = {PESO_ASSISTENCIA} pts
+                    </span>
+                  </div>
                 </div>
 
                 <button
@@ -403,7 +445,7 @@ function DashboardPage() {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[800px] text-left">
+                  <table className="w-full min-w-[900px] text-left">
                     <thead className="bg-slate-950/40 text-xs uppercase text-slate-500">
                       <tr>
                         <th className="px-6 py-4">
@@ -424,6 +466,10 @@ function DashboardPage() {
 
                         <th className="px-4 py-4 text-center">
                           Vitórias
+                        </th>
+
+                        <th className="px-4 py-4 text-center">
+                          Pontos
                         </th>
 
                         <th className="px-6 py-4 text-center">
@@ -484,6 +530,14 @@ function DashboardPage() {
 
                             <td className="px-4 py-4 text-center text-slate-300">
                               {jogador.vitorias}
+                            </td>
+
+                            <td className="px-4 py-4 text-center">
+                              <span className="inline-flex min-w-12 items-center justify-center rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-1.5 font-black text-cyan-300">
+                                {calcularPontuacaoGeral(
+                                  jogador,
+                                )}
+                              </span>
                             </td>
 
                             <td className="px-6 py-4">
