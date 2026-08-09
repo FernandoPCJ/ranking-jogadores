@@ -3,8 +3,6 @@ import {
   CalendarRange,
   Crown,
   CreditCard,
-  Goal,
-  Handshake,
   Home,
   LogOut,
   Settings,
@@ -28,18 +26,8 @@ const links = [
     Icone: Home,
   },
   {
-    caminho: '/ranking/gols',
-    nome: 'Gols',
-    Icone: Goal,
-  },
-  {
-    caminho: '/ranking/assistencias',
-    nome: 'Assistências',
-    Icone: Handshake,
-  },
-  {
-    caminho: '/ranking/vitorias',
-    nome: 'Vitórias',
+    caminho: '/ranking',
+    nome: 'Ranking',
     Icone: Trophy,
   },
   {

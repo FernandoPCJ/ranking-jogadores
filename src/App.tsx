@@ -15,6 +15,7 @@ import MeuCard from './pages/MeuCard'
 import MeuPerfil from './pages/MeuPerfil'
 import PerfilJogador from './pages/PerfilJogador'
 import Ranking from './pages/Ranking'
+import Rankings from './pages/Rankings'
 import SelecaoSemana from './pages/SelecaoSemana'
 import Temporadas from './pages/Temporadas'
 
@@ -38,21 +39,37 @@ function App() {
         />
 
         <Route
+          path="/ranking"
+          element={<Rankings />}
+        />
+
+        <Route
           path="/ranking/gols"
-          element={<Ranking tipo="gols" />}
+          element={
+            <Navigate
+              to="/ranking"
+              replace
+            />
+          }
         />
 
         <Route
           path="/ranking/assistencias"
           element={
-            <Ranking tipo="assistencias" />
+            <Navigate
+              to="/ranking"
+              replace
+            />
           }
         />
 
         <Route
           path="/ranking/vitorias"
           element={
-            <Ranking tipo="vitorias" />
+            <Navigate
+              to="/ranking"
+              replace
+            />
           }
         />
 
