@@ -1,5 +1,7 @@
 import {
   CalendarDays,
+  CalendarRange,
+  Crown,
   CreditCard,
   Goal,
   Handshake,
@@ -49,6 +51,16 @@ const links = [
     caminho: '/selecao-da-semana',
     nome: 'Seleção',
     Icone: UsersRound,
+  },
+  {
+    caminho: '/hall-da-fama',
+    nome: 'Hall da Fama',
+    Icone: Crown,
+  },
+  {
+    caminho: '/temporadas',
+    nome: 'Temporadas',
+    Icone: CalendarRange,
   },
 ]
 

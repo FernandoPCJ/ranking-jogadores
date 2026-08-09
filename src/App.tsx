@@ -9,17 +9,22 @@ import AdminJogadores from './pages/AdminJogadores'
 import AdminRegistrarRacha from './pages/AdminRegistrarRacha'
 import CriarConta from './pages/CriarConta'
 import DashboardPage from './pages/DashboardPage'
+import HallDaFama from './pages/HallDaFama'
 import Login from './pages/Login'
 import MeuCard from './pages/MeuCard'
 import MeuPerfil from './pages/MeuPerfil'
 import PerfilJogador from './pages/PerfilJogador'
 import Ranking from './pages/Ranking'
 import SelecaoSemana from './pages/SelecaoSemana'
+import Temporadas from './pages/Temporadas'
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Login />} />
+      <Route
+        path="/"
+        element={<Login />}
+      />
 
       <Route
         path="/criar-conta"
@@ -64,6 +69,16 @@ function App() {
         />
 
         <Route
+          path="/hall-da-fama"
+          element={<HallDaFama />}
+        />
+
+        <Route
+          path="/temporadas"
+          element={<Temporadas />}
+        />
+
+        <Route
           path="/meu-perfil"
           element={<MeuPerfil />}
         />
@@ -86,9 +101,7 @@ function App() {
 
           <Route
             path="/admin/registrar-racha"
-            element={
-              <AdminRegistrarRacha />
-            }
+            element={<AdminRegistrarRacha />}
           />
         </Route>
       </Route>

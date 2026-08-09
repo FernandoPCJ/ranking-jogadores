@@ -1,9 +1,11 @@
 import {
   AlertCircle,
   Camera,
+  Crown,
   Goal,
   Handshake,
   ImageOff,
+  Medal,
   Pencil,
   RefreshCw,
   Save,
@@ -20,6 +22,7 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from 'react'
+import ConquistasJogador from '../components/ConquistasJogador'
 import Header from '../components/Header'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -47,6 +50,11 @@ type PosicoesRanking = {
   gols: number | null
   assistencias: number | null
   vitorias: number | null
+}
+
+type DestaquesSemanais = {
+  selecoes_semana: number
+  mvps: number
 }
 
 type CampoRanking = 'gols' | 'assistencias' | 'vitorias'
@@ -116,6 +124,12 @@ function MeuPerfil() {
       gols: null,
       assistencias: null,
       vitorias: null,
+    })
+
+  const [destaquesSemanais, setDestaquesSemanais] =
+    useState<DestaquesSemanais>({
+      selecoes_semana: 0,
+      mvps: 0,
     })
 
   const [apelido, setApelido] = useState('')
@@ -195,6 +209,10 @@ function MeuPerfil() {
         assistencias: null,
         vitorias: null,
       })
+      setDestaquesSemanais({
+        selecoes_semana: 0,
+        mvps: 0,
+      })
       setCarregando(false)
       return
     }
@@ -234,6 +252,10 @@ function MeuPerfil() {
         assistencias: null,
         vitorias: null,
       })
+      setDestaquesSemanais({
+        selecoes_semana: 0,
+        mvps: 0,
+      })
       setCarregando(false)
       return
     }
@@ -245,23 +267,39 @@ function MeuPerfil() {
     setJogador(jogadorCarregado)
 
     if (jogadorCarregado) {
-      const {
-        data: jogadoresAtivos,
-        error: erroRanking,
-      } = await supabase
-        .from('jogadores')
-        .select(
-          `
-            id,
-            nome,
-            gols,
-            assistencias,
-            vitorias,
-            estrelas,
-            ativo
-          `,
-        )
-        .eq('ativo', true)
+      const [
+        {
+          data: jogadoresAtivos,
+          error: erroRanking,
+        },
+        {
+          data: historicoPublico,
+          error: erroHistorico,
+        },
+      ] = await Promise.all([
+        supabase
+          .from('jogadores')
+          .select(
+            `
+              id,
+              nome,
+              gols,
+              assistencias,
+              vitorias,
+              estrelas,
+              ativo
+            `,
+          )
+          .eq('ativo', true),
+
+        supabase.rpc(
+          'obter_perfil_publico',
+          {
+            p_jogador_id:
+              jogadorCarregado.id,
+          },
+        ),
+      ])
 
       if (erroRanking) {
         console.error(
@@ -295,6 +333,33 @@ function MeuPerfil() {
             jogadorCarregado.id,
             'vitorias',
           ),
+        })
+      }
+
+      if (erroHistorico) {
+        console.error(
+          'Erro ao carregar destaques semanais:',
+          erroHistorico,
+        )
+
+        setDestaquesSemanais({
+          selecoes_semana: 0,
+          mvps: 0,
+        })
+      } else {
+        const dadosHistoricos =
+          historicoPublico as
+            | {
+                selecoes_semana?: number
+                mvps?: number
+              }
+            | null
+
+        setDestaquesSemanais({
+          selecoes_semana:
+            dadosHistoricos?.selecoes_semana ?? 0,
+          mvps:
+            dadosHistoricos?.mvps ?? 0,
         })
       }
     }
@@ -1082,6 +1147,71 @@ function MeuPerfil() {
                     </article>
                   </div>
                 </section>
+
+                <section>
+                  <div className="mb-4">
+                    <p className="text-sm font-medium text-amber-400">
+                      Histórico
+                    </p>
+
+                    <h3 className="mt-1 text-2xl font-bold">
+                      Destaques semanais
+                    </h3>
+
+                    <p className="mt-1 text-sm text-slate-400">
+                      Participações calculadas automaticamente a
+                      partir do histórico dos rachas.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <article className="relative overflow-hidden rounded-2xl border border-blue-500/20 bg-blue-500/10 p-6">
+                      <Medal
+                        size={32}
+                        className="text-blue-300"
+                      />
+
+                      <p className="mt-5 text-sm text-slate-300">
+                        Seleções da Semana
+                      </p>
+
+                      <strong className="mt-1 block text-4xl text-blue-200">
+                        {destaquesSemanais.selecoes_semana}
+                      </strong>
+
+                      <p className="mt-3 text-xs leading-5 text-slate-400">
+                        Número de semanas em que você terminou
+                        entre os quatro melhores.
+                      </p>
+                    </article>
+
+                    <article className="relative overflow-hidden rounded-2xl border border-yellow-500/20 bg-yellow-500/10 p-6">
+                      <Crown
+                        size={32}
+                        className="text-yellow-300"
+                      />
+
+                      <p className="mt-5 text-sm text-slate-300">
+                        MVPs da Semana
+                      </p>
+
+                      <strong className="mt-1 block text-4xl text-yellow-200">
+                        {destaquesSemanais.mvps}
+                      </strong>
+
+                      <p className="mt-3 text-xs leading-5 text-slate-400">
+                        Número de semanas em que você terminou em
+                        primeiro lugar na pontuação semanal.
+                      </p>
+                    </article>
+                  </div>
+                </section>
+
+                <ConquistasJogador
+                  jogadorId={jogador.id}
+                  titulo="Minhas conquistas"
+                  descricao="Badges desbloqueadas automaticamente pelo seu desempenho nos rachas."
+                />
 
                 <article className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
                   <div className="flex items-center gap-3">

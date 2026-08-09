@@ -20,6 +20,7 @@ import {
   Link,
   useParams,
 } from 'react-router'
+import ConquistasJogador from '../components/ConquistasJogador'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
 import {
@@ -980,6 +981,12 @@ function PerfilJogador() {
                 </article>
               </div>
             </section>
+
+            <ConquistasJogador
+              jogadorId={perfil.jogador_id}
+              titulo="Conquistas"
+              descricao="Badges desbloqueadas automaticamente pelo desempenho deste jogador."
+            />
           </div>
         </div>
       </main>
