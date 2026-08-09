@@ -1,5 +1,7 @@
 import {
   AlertCircle,
+  CalendarDays,
+  Lock,
   Pencil,
   Plus,
   RefreshCw,
@@ -16,6 +18,7 @@ import {
   useState,
   type FormEvent,
 } from 'react'
+import { useNavigate } from 'react-router'
 import Header from '../components/Header'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -33,41 +36,17 @@ type JogadorAdmin = {
 
 type FormularioJogador = {
   nome: string
-  gols: string
-  assistencias: string
-  vitorias: string
   estrelas: string
 }
 
 const formularioVazio: FormularioJogador = {
   nome: '',
-  gols: '0',
-  assistencias: '0',
-  vitorias: '0',
   estrelas: '0',
 }
 
-const camposNumericos = [
-  {
-    campo: 'gols',
-    rotulo: 'Gols',
-  },
-  {
-    campo: 'assistencias',
-    rotulo: 'Assistências',
-  },
-  {
-    campo: 'vitorias',
-    rotulo: 'Vitórias',
-  },
-  {
-    campo: 'estrelas',
-    rotulo: 'Estrelas',
-  },
-] as const
-
 function AdminJogadores() {
   const { perfil } = useAuth()
+  const navigate = useNavigate()
 
   const [jogadores, setJogadores] = useState<JogadorAdmin[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -153,9 +132,6 @@ function AdminJogadores() {
 
     setFormulario({
       nome: jogador.nome,
-      gols: String(jogador.gols),
-      assistencias: String(jogador.assistencias),
-      vitorias: String(jogador.vitorias),
       estrelas: String(jogador.estrelas),
     })
 
@@ -201,24 +177,9 @@ function AdminJogadores() {
       return
     }
 
-    let gols: number
-    let assistencias: number
-    let vitorias: number
     let estrelas: number
 
     try {
-      gols = converterNumero(formulario.gols, 'Gols')
-
-      assistencias = converterNumero(
-        formulario.assistencias,
-        'Assistências',
-      )
-
-      vitorias = converterNumero(
-        formulario.vitorias,
-        'Vitórias',
-      )
-
       estrelas = converterNumero(
         formulario.estrelas,
         'Estrelas',
@@ -242,9 +203,6 @@ function AdminJogadores() {
         .from('jogadores')
         .update({
           nome,
-          gols,
-          assistencias,
-          vitorias,
           estrelas,
           atualizado_em: new Date().toISOString(),
         })
@@ -267,9 +225,6 @@ function AdminJogadores() {
         .from('jogadores')
         .insert({
           nome,
-          gols,
-          assistencias,
-          vitorias,
           estrelas,
           ativo: true,
         })
@@ -380,19 +335,31 @@ function AdminJogadores() {
             </h2>
 
             <p className="mt-2 text-slate-400">
-              Olá, {perfil?.nome}. Cadastre jogadores e
-              atualize as estatísticas do campeonato.
+              Olá, {perfil?.nome}. Gerencie os dados cadastrais
+              dos jogadores. As estatísticas oficiais são
+              alimentadas pelos rachas registrados.
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={abrirCadastro}
-            className="flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-white transition hover:bg-emerald-600"
-          >
-            <Plus size={20} />
-            Adicionar jogador
-          </button>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => navigate('/admin/registrar-racha')}
+              className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 font-semibold text-emerald-300 transition hover:bg-emerald-500/20"
+            >
+              <CalendarDays size={20} />
+              Registrar racha
+            </button>
+
+            <button
+              type="button"
+              onClick={abrirCadastro}
+              className="flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-white transition hover:bg-emerald-600"
+            >
+              <Plus size={20} />
+              Adicionar jogador
+            </button>
+          </div>
         </section>
 
         <section className="mb-6 grid gap-4 sm:grid-cols-3">
@@ -427,6 +394,36 @@ function AdminJogadores() {
           </article>
         </section>
 
+        <section className="mb-6 rounded-2xl border border-blue-500/20 bg-blue-500/10 p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300">
+                <Lock size={19} />
+              </div>
+
+              <div>
+                <h3 className="font-bold text-blue-200">
+                  Estatísticas oficiais protegidas
+                </h3>
+
+                <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-300">
+                  Gols, assistências e vitórias são somente leitura nesta tela.
+                  Para adicionar novos resultados, registre o racha correspondente.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigate('/admin/registrar-racha')}
+              className="flex shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-400"
+            >
+              <CalendarDays size={17} />
+              Registrar racha
+            </button>
+          </div>
+        </section>
+
         {mensagem && (
           <div className="mb-6 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 text-sm text-emerald-300">
             {mensagem}
@@ -448,8 +445,8 @@ function AdminJogadores() {
               </h3>
 
               <p className="mt-1 text-sm text-slate-400">
-                Edite as estatísticas ou altere o status dos
-                jogadores.
+                Consulte as estatísticas oficiais e gerencie nome,
+                estrelas e status dos jogadores.
               </p>
             </div>
 
@@ -496,13 +493,19 @@ function AdminJogadores() {
                   <tr>
                     <th className="px-6 py-4">Jogador</th>
                     <th className="px-4 py-4 text-center">
-                      Gols
+                      <span className="inline-flex items-center gap-1">
+                        Gols <Lock size={11} />
+                      </span>
                     </th>
                     <th className="px-4 py-4 text-center">
-                      Assistências
+                      <span className="inline-flex items-center gap-1">
+                        Assistências <Lock size={11} />
+                      </span>
                     </th>
                     <th className="px-4 py-4 text-center">
-                      Vitórias
+                      <span className="inline-flex items-center gap-1">
+                        Vitórias <Lock size={11} />
+                      </span>
                     </th>
                     <th className="px-4 py-4 text-center">
                       Estrelas
@@ -641,7 +644,9 @@ function AdminJogadores() {
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-400">
-                  Informe os dados e as estatísticas.
+                  {jogadorEmEdicao
+                    ? 'Edite apenas os dados administrativos permitidos.'
+                    : 'Cadastre o jogador com estatísticas iniciais zeradas.'}
                 </p>
               </div>
 
@@ -681,35 +686,85 @@ function AdminJogadores() {
                 />
               </div>
 
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                {camposNumericos.map(
-                  ({ campo, rotulo }) => (
-                    <div key={campo}>
-                      <label
-                        htmlFor={`campo-${campo}`}
-                        className="mb-2 block text-sm font-medium text-slate-200"
-                      >
-                        {rotulo}
-                      </label>
+              {jogadorEmEdicao && (
+                <div className="mt-5">
+                  <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-300">
+                    <Lock size={16} className="text-blue-400" />
+                    Estatísticas oficiais
+                  </div>
 
-                      <input
-                        id={`campo-${campo}`}
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={formulario[campo]}
-                        onChange={(event) =>
-                          atualizarCampo(
-                            campo,
-                            event.target.value,
-                          )
-                        }
-                        disabled={salvando}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-60"
-                      />
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+                      <p className="text-xs uppercase tracking-wider text-slate-500">
+                        Gols
+                      </p>
+                      <strong className="mt-1 block text-xl text-emerald-400">
+                        {jogadorEmEdicao.gols}
+                      </strong>
                     </div>
-                  ),
-                )}
+
+                    <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+                      <p className="text-xs uppercase tracking-wider text-slate-500">
+                        Assistências
+                      </p>
+                      <strong className="mt-1 block text-xl">
+                        {jogadorEmEdicao.assistencias}
+                      </strong>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+                      <p className="text-xs uppercase tracking-wider text-slate-500">
+                        Vitórias
+                      </p>
+                      <strong className="mt-1 block text-xl">
+                        {jogadorEmEdicao.vitorias}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <p className="mt-3 text-xs leading-5 text-slate-500">
+                    Estes valores são atualizados pelo fluxo de Registrar Racha
+                    e não podem ser alterados neste formulário.
+                  </p>
+                </div>
+              )}
+
+              {!jogadorEmEdicao && (
+                <div className="mt-5 rounded-xl border border-blue-500/20 bg-blue-500/10 p-4">
+                  <div className="flex items-start gap-3">
+                    <Lock size={17} className="mt-0.5 shrink-0 text-blue-300" />
+                    <p className="text-sm leading-6 text-slate-300">
+                      O novo jogador será criado com <strong>0 gols</strong>,{' '}
+                      <strong>0 assistências</strong> e <strong>0 vitórias</strong>.
+                      Os resultados serão adicionados posteriormente pelos rachas.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-5">
+                <label
+                  htmlFor="campo-estrelas"
+                  className="mb-2 block text-sm font-medium text-slate-200"
+                >
+                  Estrelas
+                </label>
+
+                <input
+                  id="campo-estrelas"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={formulario.estrelas}
+                  onChange={(event) =>
+                    atualizarCampo(
+                      'estrelas',
+                      event.target.value,
+                    )
+                  }
+                  disabled={salvando}
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-60"
+                />
               </div>
 
               {erro && modalAberto && (
