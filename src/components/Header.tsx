@@ -150,9 +150,8 @@ function Header() {
                 <NavLink
                   key={caminho}
                   to={caminho}
-                  className={({
-                    isActive,
-                  }) =>
+                  end={caminho === '/ranking'}
+                  className={({ isActive }) =>
                     `flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
                       isActive
                         ? 'bg-emerald-500 text-white'
