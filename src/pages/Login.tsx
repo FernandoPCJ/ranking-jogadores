@@ -1,4 +1,7 @@
-import { UserPlus } from 'lucide-react'
+import {
+  KeyRound,
+  UserPlus,
+} from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import {
   Link,
@@ -181,12 +184,22 @@ function Login() {
           </div>
 
           <div>
-            <label
-              htmlFor="senha"
-              className="mb-2 block text-sm font-medium text-slate-200"
-            >
-              Senha
-            </label>
+            <div className="mb-2 flex items-center justify-between gap-4">
+              <label
+                htmlFor="senha"
+                className="block text-sm font-medium text-slate-200"
+              >
+                Senha
+              </label>
+
+              <Link
+                to="/esqueci-senha"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 transition hover:text-emerald-300"
+              >
+                <KeyRound size={14} />
+                Esqueci minha senha
+              </Link>
+            </div>
 
             <input
               id="senha"

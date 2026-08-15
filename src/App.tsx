@@ -9,12 +9,14 @@ import AdminJogadores from './pages/AdminJogadores'
 import AdminRegistrarRacha from './pages/AdminRegistrarRacha'
 import CriarConta from './pages/CriarConta'
 import DashboardPage from './pages/DashboardPage'
+import EsqueciSenha from './pages/EsqueciSenha'
 import HallDaFama from './pages/HallDaFama'
 import Login from './pages/Login'
 import MeuCard from './pages/MeuCard'
 import MeuPerfil from './pages/MeuPerfil'
 import PerfilJogador from './pages/PerfilJogador'
 import Ranking from './pages/Ranking'
+import RedefinirSenha from './pages/RedefinirSenha'
 import Rankings from './pages/Rankings'
 import SelecaoSemana from './pages/SelecaoSemana'
 import Temporadas from './pages/Temporadas'
@@ -30,6 +32,16 @@ function App() {
       <Route
         path="/criar-conta"
         element={<CriarConta />}
+      />
+
+      <Route
+        path="/esqueci-senha"
+        element={<EsqueciSenha />}
+      />
+
+      <Route
+        path="/redefinir-senha"
+        element={<RedefinirSenha />}
       />
 
       <Route element={<ProtectedRoute />}>
