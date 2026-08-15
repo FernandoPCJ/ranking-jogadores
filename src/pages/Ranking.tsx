@@ -1,13 +1,23 @@
 import {
+  Check,
   Goal,
   Handshake,
   RefreshCw,
+  RotateCcw,
+  Shuffle,
+  Sparkles,
   Star,
   Trophy,
+  Users,
   type LucideIcon,
 } from 'lucide-react'
+import {
+  useMemo,
+  useState,
+} from 'react'
 import { Link } from 'react-router'
 import Header from '../components/Header'
+import { useAuth } from '../contexts/AuthContext'
 import {
   useJogadores,
   type Jogador,
@@ -199,127 +209,1137 @@ function estiloPosicao(posicao: number) {
   return 'border border-slate-700 bg-slate-800 text-slate-500'
 }
 
-function RankingEstrelas({
+type TimeSorteado = {
+  numero: number
+  jogadores: Jogador[]
+  totalEstrelas: number
+}
+
+function embaralhar<T>(
+  itens: T[],
+) {
+  const copia = [...itens]
+
+  for (
+    let indice = copia.length - 1;
+    indice > 0;
+    indice -= 1
+  ) {
+    const outroIndice =
+      Math.floor(
+        Math.random() *
+          (indice + 1),
+      )
+
+    ;[
+      copia[indice],
+      copia[outroIndice],
+    ] = [
+      copia[outroIndice],
+      copia[indice],
+    ]
+  }
+
+  return copia
+}
+
+function pontuacaoEquilibrio(
+  times: TimeSorteado[],
+) {
+  const totais = times.map(
+    (time) => time.totalEstrelas,
+  )
+
+  const maior = Math.max(...totais)
+  const menor = Math.min(...totais)
+
+  const media =
+    totais.reduce(
+      (soma, total) =>
+        soma + total,
+      0,
+    ) / totais.length
+
+  const variancia =
+    totais.reduce(
+      (soma, total) =>
+        soma +
+        (total - media) ** 2,
+      0,
+    ) / totais.length
+
+  /*
+   * A diferença entre o time mais forte e o mais fraco
+   * tem prioridade. A variância desempata combinações
+   * com a mesma diferença máxima.
+   */
+  return (
+    (maior - menor) *
+      10000 +
+    variancia
+  )
+}
+
+function montarTimesEquilibrados(
+  jogadores: Jogador[],
+  quantidadeTimes: number,
+) {
+  if (
+    quantidadeTimes < 2 ||
+    jogadores.length <
+      quantidadeTimes
+  ) {
+    return []
+  }
+
+  const tamanhoBase =
+    Math.floor(
+      jogadores.length /
+        quantidadeTimes,
+    )
+
+  const excedentes =
+    jogadores.length %
+    quantidadeTimes
+
+  let melhorTimes:
+    | TimeSorteado[]
+    | null = null
+
+  let melhorPontuacao =
+    Number.POSITIVE_INFINITY
+
+  /*
+   * Faz várias tentativas alterando a distribuição
+   * entre jogadores de força semelhante e guarda a
+   * combinação mais equilibrada encontrada.
+   *
+   * Depois de cada distribuição, tenta trocas entre
+   * jogadores de times diferentes para reduzir ainda
+   * mais a diferença de estrelas.
+   */
+  for (
+    let tentativa = 0;
+    tentativa < 700;
+    tentativa += 1
+  ) {
+    const capacidades =
+      embaralhar(
+        Array.from(
+          {
+            length:
+              quantidadeTimes,
+          },
+          (_, indice) =>
+            tamanhoBase +
+            (indice < excedentes
+              ? 1
+              : 0),
+        ),
+      )
+
+    const jogadoresOrdenados =
+      embaralhar(jogadores)
+        .map((jogador) => ({
+          jogador,
+          desempate:
+            Math.random(),
+        }))
+        .sort(
+          (a, b) =>
+            b.jogador.estrelas -
+              a.jogador.estrelas ||
+            a.desempate -
+              b.desempate,
+        )
+        .map(
+          ({ jogador }) =>
+            jogador,
+        )
+
+    let times: TimeSorteado[] =
+      Array.from(
+        {
+          length:
+            quantidadeTimes,
+        },
+        (_, indice) => ({
+          numero: indice + 1,
+          jogadores: [],
+          totalEstrelas: 0,
+        }),
+      )
+
+    for (
+      const jogador of
+      jogadoresOrdenados
+    ) {
+      const candidatos =
+        times
+          .map(
+            (time, indice) => ({
+              time,
+              indice,
+            }),
+          )
+          .filter(
+            ({ time, indice }) =>
+              time.jogadores.length <
+              capacidades[indice],
+          )
+          .sort(
+            (a, b) =>
+              a.time
+                .totalEstrelas -
+                b.time
+                  .totalEstrelas ||
+              a.time.jogadores
+                .length -
+                b.time.jogadores
+                  .length ||
+              Math.random() -
+                0.5,
+          )
+
+      const escolhido =
+        candidatos[0]
+
+      if (!escolhido) {
+        continue
+      }
+
+      escolhido.time.jogadores.push(
+        jogador,
+      )
+
+      escolhido.time.totalEstrelas +=
+        jogador.estrelas
+    }
+
+    let melhorou = true
+    let ciclos = 0
+
+    while (
+      melhorou &&
+      ciclos < 30
+    ) {
+      melhorou = false
+      ciclos += 1
+
+      const pontuacaoAtual =
+        pontuacaoEquilibrio(
+          times,
+        )
+
+      outer: for (
+        let primeiroTime = 0;
+        primeiroTime <
+        times.length;
+        primeiroTime += 1
+      ) {
+        for (
+          let segundoTime =
+            primeiroTime + 1;
+          segundoTime <
+          times.length;
+          segundoTime += 1
+        ) {
+          for (
+            let primeiroJogador = 0;
+            primeiroJogador <
+            times[primeiroTime]
+              .jogadores.length;
+            primeiroJogador += 1
+          ) {
+            for (
+              let segundoJogador = 0;
+              segundoJogador <
+              times[segundoTime]
+                .jogadores.length;
+              segundoJogador += 1
+            ) {
+              const jogadorA =
+                times[
+                  primeiroTime
+                ].jogadores[
+                  primeiroJogador
+                ]
+
+              const jogadorB =
+                times[
+                  segundoTime
+                ].jogadores[
+                  segundoJogador
+                ]
+
+              if (
+                jogadorA.estrelas ===
+                jogadorB.estrelas
+              ) {
+                continue
+              }
+
+              const copia =
+                times.map(
+                  (time) => ({
+                    ...time,
+                    jogadores: [
+                      ...time.jogadores,
+                    ],
+                  }),
+                )
+
+              copia[
+                primeiroTime
+              ].jogadores[
+                primeiroJogador
+              ] = jogadorB
+
+              copia[
+                segundoTime
+              ].jogadores[
+                segundoJogador
+              ] = jogadorA
+
+              copia[
+                primeiroTime
+              ].totalEstrelas =
+                copia[
+                  primeiroTime
+                ].jogadores.reduce(
+                  (soma, item) =>
+                    soma +
+                    item.estrelas,
+                  0,
+                )
+
+              copia[
+                segundoTime
+              ].totalEstrelas =
+                copia[
+                  segundoTime
+                ].jogadores.reduce(
+                  (soma, item) =>
+                    soma +
+                    item.estrelas,
+                  0,
+                )
+
+              const novaPontuacao =
+                pontuacaoEquilibrio(
+                  copia,
+                )
+
+              if (
+                novaPontuacao <
+                pontuacaoAtual
+              ) {
+                times = copia
+                melhorou = true
+                break outer
+              }
+            }
+          }
+        }
+      }
+    }
+
+    const pontuacao =
+      pontuacaoEquilibrio(
+        times,
+      )
+
+    if (
+      pontuacao <
+      melhorPontuacao
+    ) {
+      melhorPontuacao =
+        pontuacao
+
+      melhorTimes =
+        times.map(
+          (time, indice) => ({
+            ...time,
+            numero:
+              indice + 1,
+            jogadores:
+              [...time.jogadores].sort(
+                (a, b) =>
+                  b.estrelas -
+                    a.estrelas ||
+                  (
+                    a.apelido ||
+                    a.nome
+                  ).localeCompare(
+                    b.apelido ||
+                      b.nome,
+                    'pt-BR',
+                  ),
+              ),
+          }),
+        )
+    }
+
+    /*
+     * Diferença zero já é equilíbrio perfeito;
+     * não há por que continuar procurando.
+     */
+    if (
+      melhorTimes &&
+      pontuacaoEquilibrio(
+        melhorTimes,
+      ) === 0
+    ) {
+      break
+    }
+  }
+
+  return melhorTimes ?? []
+}
+
+function estrelasCompactas(
+  quantidade: number,
+) {
+  return (
+    <span
+      className="inline-flex items-center gap-0.5 text-yellow-400"
+      aria-label={`${quantidade} estrelas`}
+    >
+      {Array.from({
+        length: quantidade,
+      }).map((_, indice) => (
+        <Star
+          key={indice}
+          size={13}
+          fill="currentColor"
+        />
+      ))}
+    </span>
+  )
+}
+
+function SorteadorTimes({
   jogadores,
 }: {
   jogadores: Jogador[]
 }) {
+  const [
+    jogadoresSelecionados,
+    setJogadoresSelecionados,
+  ] = useState<number[]>([])
+
+  const [
+    quantidadeTimes,
+    setQuantidadeTimes,
+  ] = useState(4)
+
+  const [times, setTimes] =
+    useState<TimeSorteado[]>(
+      [],
+    )
+
+  const [mensagem, setMensagem] =
+    useState('')
+
+  const limiteJogadores =
+    quantidadeTimes === 3
+      ? 12
+      : 16
+
+  const jogadoresAvaliados =
+    useMemo(
+      () =>
+        [...jogadores]
+          .filter(
+            (jogador) =>
+              jogador.estrelas > 0,
+          )
+          .sort((a, b) =>
+            (
+              a.apelido ||
+              a.nome
+            ).localeCompare(
+              b.apelido ||
+                b.nome,
+              'pt-BR',
+            ),
+          ),
+      [jogadores],
+    )
+
+  const selecionados =
+    useMemo(() => {
+      const ids =
+        new Set(
+          jogadoresSelecionados,
+        )
+
+      return jogadoresAvaliados.filter(
+        (jogador) =>
+          ids.has(jogador.id),
+      )
+    }, [
+      jogadoresAvaliados,
+      jogadoresSelecionados,
+    ])
+
+  const quantidadeMaximaSelecionavel =
+    Math.min(
+      jogadoresAvaliados.length,
+      limiteJogadores,
+    )
+
+  const todosSelecionados =
+    quantidadeMaximaSelecionavel >
+      0 &&
+    jogadoresSelecionados.length ===
+      quantidadeMaximaSelecionavel
+
+  function alternarJogador(
+    jogadorId: number,
+  ) {
+    const jaSelecionado =
+      jogadoresSelecionados.includes(
+        jogadorId,
+      )
+
+    if (
+      !jaSelecionado &&
+      jogadoresSelecionados.length >=
+        limiteJogadores
+    ) {
+      setMensagem(
+        quantidadeTimes === 3
+          ? 'Para 3 times, são necessários exatamente 12 jogadores.'
+          : 'Para 4 times, são necessários exatamente 16 jogadores.',
+      )
+
+      return
+    }
+
+    setJogadoresSelecionados(
+      (atuais) =>
+        atuais.includes(
+          jogadorId,
+        )
+          ? atuais.filter(
+              (id) =>
+                id !==
+                jogadorId,
+            )
+          : [
+              ...atuais,
+              jogadorId,
+            ],
+    )
+
+    setTimes([])
+    setMensagem('')
+  }
+
+  function alternarTodos() {
+    if (todosSelecionados) {
+      setJogadoresSelecionados(
+        [],
+      )
+    } else {
+      setJogadoresSelecionados(
+        jogadoresAvaliados
+          .slice(
+            0,
+            limiteJogadores,
+          )
+          .map(
+            (jogador) =>
+              jogador.id,
+          ),
+      )
+    }
+
+    setTimes([])
+    setMensagem('')
+  }
+
+  function sortearTimes() {
+    const quantidadeNecessaria =
+      quantidadeTimes === 3
+        ? 12
+        : 16
+
+    if (
+      selecionados.length !==
+      quantidadeNecessaria
+    ) {
+      setMensagem(
+        quantidadeTimes === 3
+          ? 'Selecione exatamente 12 jogadores para montar 3 times.'
+          : 'Selecione exatamente 16 jogadores para montar 4 times.',
+      )
+      return
+    }
+
+    const resultado =
+      montarTimesEquilibrados(
+        selecionados,
+        quantidadeTimes,
+      )
+
+    if (
+      resultado.length === 0
+    ) {
+      setMensagem(
+        'Não foi possível montar os times com esta configuração.',
+      )
+      return
+    }
+
+    setTimes(resultado)
+    setMensagem('')
+  }
+
+  const totais =
+    times.map(
+      (time) =>
+        time.totalEstrelas,
+    )
+
+  const diferenca =
+    totais.length > 0
+      ? Math.max(...totais) -
+        Math.min(...totais)
+      : 0
+
+  const qualidade =
+    diferenca === 0
+      ? 'Perfeito'
+      : diferenca === 1
+        ? 'Excelente'
+        : diferenca === 2
+          ? 'Bom'
+          : 'Melhor equilíbrio encontrado'
+
   return (
-    <section className="grid gap-6 xl:grid-cols-2">
-      {divisoes.map((divisao, indice) => {
-        const jogadoresDaDivisao =
-          jogadores
-            .filter(
-              (jogador) =>
-                jogador.estrelas ===
-                divisao.estrelas,
-            )
-            .sort((a, b) =>
-              (a.apelido || a.nome).localeCompare(
-                b.apelido || b.nome,
-                'pt-BR',
-              ),
-            )
+    <section className="mb-8 overflow-hidden rounded-3xl border border-emerald-500/20 bg-slate-900">
+      <header className="border-b border-slate-800 bg-emerald-500/5 px-5 py-5 sm:px-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+              <Shuffle size={22} />
+            </div>
 
-        const ultimaDivisao =
-          indice === divisoes.length - 1
+            <div>
+              <p className="text-sm font-semibold text-emerald-400">
+                Formação do racha
+              </p>
 
-        return (
-          <article
-            key={divisao.estrelas}
-            className={`overflow-hidden rounded-2xl border ${divisao.classe} ${
-              ultimaDivisao
-                ? 'xl:col-span-2'
-                : ''
-            }`}
-          >
-            <header className="border-b border-slate-800 bg-slate-900/80 px-5 py-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="text-lg font-bold text-white">
-                    {divisao.titulo}
-                  </h3>
+              <h3 className="mt-1 text-xl font-black text-white">
+                Montar times equilibrados
+              </h3>
 
-                  <p className="mt-1 text-sm text-slate-400">
-                    {divisao.descricao}
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-400">
+                Selecione quem vai jogar. Para montar 3 times, escolha 12 jogadores. Para montar 4 times, escolha 16 jogadores. O sistema usa as estrelas para procurar a divisão com a menor diferença de força possível.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2 rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2">
+            <Users
+              size={17}
+              className="text-slate-400"
+            />
+
+            <span className="text-sm text-slate-400">
+              Selecionados:
+            </span>
+
+            <strong className="text-emerald-300">
+              {selecionados.length}/
+              {limiteJogadores}
+            </strong>
+          </div>
+        </div>
+      </header>
+
+      <div className="p-5 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <label
+              htmlFor="quantidade-times"
+              className="mb-2 block text-sm font-semibold text-slate-200"
+            >
+              Quantidade de times
+            </label>
+
+            <select
+              id="quantidade-times"
+              value={quantidadeTimes}
+              onChange={(event) => {
+                const novaQuantidade =
+                  Number(
+                    event.target.value,
+                  )
+
+                const novoLimite =
+                  novaQuantidade === 3
+                    ? 12
+                    : 16
+
+                setQuantidadeTimes(
+                  novaQuantidade,
+                )
+
+                setJogadoresSelecionados(
+                  (atuais) =>
+                    atuais.slice(
+                      0,
+                      novoLimite,
+                    ),
+                )
+
+                setTimes([])
+
+                setMensagem(
+                  jogadoresSelecionados.length >
+                    novoLimite
+                    ? `A seleção foi ajustada para ${novoLimite} jogadores.`
+                    : '',
+                )
+              }}
+              className="h-11 rounded-xl border border-slate-700 bg-slate-950 px-4 font-bold text-white outline-none transition focus:border-emerald-500"
+            >
+              <option value={3}>
+                3 times
+              </option>
+
+              <option value={4}>
+                4 times
+              </option>
+            </select>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={alternarTodos}
+              disabled={
+                jogadoresAvaliados.length ===
+                0
+              }
+              className="rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {todosSelecionados
+                ? 'Desmarcar todos'
+                : 'Selecionar todos'}
+            </button>
+
+            <button
+              type="button"
+              onClick={sortearTimes}
+              disabled={
+                selecionados.length !==
+                limiteJogadores
+              }
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Shuffle size={17} />
+              {times.length > 0
+                ? 'Sortear novamente'
+                : selecionados.length ===
+                    limiteJogadores
+                  ? 'Montar times'
+                  : `Selecione ${limiteJogadores}`}
+
+            </button>
+          </div>
+        </div>
+
+        {jogadoresAvaliados.length ===
+        0 ? (
+          <div className="mt-5 rounded-2xl border border-dashed border-slate-700 p-8 text-center">
+            <Star
+              size={28}
+              className="mx-auto text-slate-600"
+            />
+
+            <p className="mt-3 text-sm text-slate-500">
+              Ainda não há jogadores com estrelas definidas.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {jogadoresAvaliados.map(
+                (jogador) => {
+                  const selecionado =
+                    jogadoresSelecionados.includes(
+                      jogador.id,
+                    )
+
+                  return (
+                    <button
+                      type="button"
+                      key={
+                        jogador.id
+                      }
+                      onClick={() =>
+                        alternarJogador(
+                          jogador.id,
+                        )
+                      }
+                      className={`group flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
+                        selecionado
+                          ? 'border-emerald-500/50 bg-emerald-500/10'
+                          : 'border-slate-800 bg-slate-950/40 hover:border-slate-700 hover:bg-slate-800/50'
+                      }`}
+                    >
+                      <span
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+                          selecionado
+                            ? 'border-emerald-400 bg-emerald-500 text-slate-950'
+                            : 'border-slate-600 bg-slate-900'
+                        }`}
+                      >
+                        {selecionado && (
+                          <Check
+                            size={13}
+                            strokeWidth={
+                              3
+                            }
+                          />
+                        )}
+                      </span>
+
+                      <AvatarJogador
+                        jogador={
+                          jogador
+                        }
+                        tamanho="sm"
+                      />
+
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-white">
+                          {jogador.apelido ||
+                            jogador.nome}
+                        </p>
+
+                        {jogador.apelido && (
+                          <p className="truncate text-[11px] text-slate-500">
+                            {
+                              jogador.nome
+                            }
+                          </p>
+                        )}
+
+                        <div className="mt-1">
+                          {estrelasCompactas(
+                            jogador.estrelas,
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  )
+                },
+              )}
+            </div>
+
+            {jogadores.length >
+              jogadoresAvaliados.length && (
+              <p className="mt-3 text-xs leading-5 text-slate-500">
+                Jogadores sem estrelas ainda não entram no sorteio. Defina o nível deles na administração para incluí-los.
+              </p>
+            )}
+          </>
+        )}
+
+        {mensagem && (
+          <div className="mt-5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+            {mensagem}
+          </div>
+        )}
+
+        {times.length > 0 && (
+          <div className="mt-7 border-t border-slate-800 pt-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-emerald-400">
+                  <Sparkles
+                    size={18}
+                  />
+
+                  <p className="text-sm font-semibold">
+                    Resultado
                   </p>
                 </div>
 
-                <div className="flex items-center gap-1">
-                  {Array.from({
-                    length: divisao.estrelas,
-                  }).map((_, estrela) => (
-                    <Star
-                      key={estrela}
-                      size={18}
-                      fill="currentColor"
-                      className="text-yellow-400"
-                    />
-                  ))}
-                </div>
+                <h4 className="mt-1 text-xl font-black">
+                  Times do racha
+                </h4>
               </div>
 
-              <div className="mt-4 flex items-center justify-between">
-                <span
-                  className={`rounded-lg px-3 py-1.5 text-xs font-bold ${divisao.classeCabecalho}`}
-                >
-                  {jogadoresDaDivisao.length}{' '}
-                  {jogadoresDaDivisao.length === 1
-                    ? 'jogador'
-                    : 'jogadores'}
+              <div className="rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-2 text-sm">
+                <span className="text-slate-400">
+                  Equilíbrio:{' '}
                 </span>
 
-                <span className="text-xs text-slate-500">
-                  Clique para ver o perfil
+                <strong className="text-emerald-300">
+                  {qualidade}
+                </strong>
+
+                <span className="ml-2 text-slate-500">
+                  · diferença{' '}
+                  {diferenca}{' '}
+                  {diferenca === 1
+                    ? 'estrela'
+                    : 'estrelas'}
                 </span>
               </div>
-            </header>
+            </div>
 
-            {jogadoresDaDivisao.length > 0 ? (
-              <div className="divide-y divide-slate-800 bg-slate-900">
-                {jogadoresDaDivisao.map(
-                  (jogador) => (
-                    <Link
-                      key={jogador.id}
-                      to={`/jogador/${jogador.id}`}
-                      title={`Ver perfil de ${jogador.nome}`}
-                      className="group flex items-center gap-3 px-5 py-4 transition hover:bg-slate-800/60"
-                    >
-                      <AvatarJogador
-                        jogador={jogador}
-                      />
+            <div
+              className={`mt-5 grid gap-4 ${
+                times.length === 2
+                  ? 'md:grid-cols-2'
+                  : times.length === 3
+                    ? 'md:grid-cols-3'
+                    : 'md:grid-cols-2 xl:grid-cols-4'
+              }`}
+            >
+              {times.map(
+                (time) => (
+                  <article
+                    key={
+                      time.numero
+                    }
+                    className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-950/50"
+                  >
+                    <header className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-slate-500">
+                          Equipe
+                        </p>
 
-                      <NomeJogador
-                        jogador={jogador}
-                      />
-
-                      <div className="ml-auto flex shrink-0 items-center gap-1">
-                        {Array.from({
-                          length: jogador.estrelas,
-                        }).map(
-                          (_, estrela) => (
-                            <Star
-                              key={estrela}
-                              size={15}
-                              fill="currentColor"
-                              className="text-yellow-400"
-                            />
-                          ),
-                        )}
+                        <h5 className="font-black text-white">
+                          Time{' '}
+                          {
+                            time.numero
+                          }
+                        </h5>
                       </div>
-                    </Link>
-                  ),
-                )}
-              </div>
-            ) : (
-              <div className="bg-slate-900 px-5 py-8 text-center text-sm text-slate-500">
-                Nenhum jogador nesta divisão.
-              </div>
-            )}
-          </article>
-        )
-      })}
+
+                      <div className="text-right">
+                        <strong className="text-xl text-yellow-300">
+                          {
+                            time.totalEstrelas
+                          }
+                        </strong>
+
+                        <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                          estrelas
+                        </p>
+                      </div>
+                    </header>
+
+                    <div className="divide-y divide-slate-800">
+                      {time.jogadores.map(
+                        (
+                          jogador,
+                        ) => (
+                          <Link
+                            key={
+                              jogador.id
+                            }
+                            to={`/jogador/${jogador.id}`}
+                            className="group flex items-center gap-3 px-4 py-3 transition hover:bg-slate-800/60"
+                          >
+                            <AvatarJogador
+                              jogador={
+                                jogador
+                              }
+                              tamanho="sm"
+                            />
+
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-bold text-white transition group-hover:text-emerald-300">
+                                {jogador.apelido ||
+                                  jogador.nome}
+                              </p>
+
+                              <div className="mt-1">
+                                {estrelasCompactas(
+                                  jogador.estrelas,
+                                )}
+                              </div>
+                            </div>
+
+                            <span className="text-xs font-black text-yellow-300">
+                              {
+                                jogador.estrelas
+                              }
+                              ★
+                            </span>
+                          </Link>
+                        ),
+                      )}
+                    </div>
+                  </article>
+                ),
+              )}
+            </div>
+
+            <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-950/40 p-4 text-xs leading-5 text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+              <p>
+                A quantidade de jogadores por time fica igual ou difere no máximo em 1 quando o total não é divisível exatamente.
+              </p>
+
+              <button
+                type="button"
+                onClick={sortearTimes}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-700 px-3 py-2 font-semibold text-slate-300 transition hover:bg-slate-800"
+              >
+                <RotateCcw
+                  size={15}
+                />
+                Nova combinação
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </section>
+  )
+}
+
+function RankingEstrelas({
+  jogadores,
+  ehAdmin,
+}: {
+  jogadores: Jogador[]
+  ehAdmin: boolean
+}) {
+  return (
+    <>
+      {ehAdmin && (
+        <SorteadorTimes
+          jogadores={jogadores}
+        />
+      )}
+
+      <section className="grid gap-6 xl:grid-cols-2">
+        {divisoes.map((divisao, indice) => {
+          const jogadoresDaDivisao =
+            jogadores
+              .filter(
+                (jogador) =>
+                  jogador.estrelas ===
+                  divisao.estrelas,
+              )
+              .sort((a, b) =>
+                (a.apelido || a.nome).localeCompare(
+                  b.apelido || b.nome,
+                  'pt-BR',
+                ),
+              )
+
+          const ultimaDivisao =
+            indice === divisoes.length - 1
+
+          return (
+            <article
+              key={divisao.estrelas}
+              className={`overflow-hidden rounded-2xl border ${divisao.classe} ${
+                ultimaDivisao
+                  ? 'xl:col-span-2'
+                  : ''
+              }`}
+            >
+              <header className="border-b border-slate-800 bg-slate-900/80 px-5 py-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-white">
+                      {divisao.titulo}
+                    </h3>
+
+                    <p className="mt-1 text-sm text-slate-400">
+                      {divisao.descricao}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({
+                      length: divisao.estrelas,
+                    }).map((_, estrela) => (
+                      <Star
+                        key={estrela}
+                        size={18}
+                        fill="currentColor"
+                        className="text-yellow-400"
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between">
+                  <span
+                    className={`rounded-lg px-3 py-1.5 text-xs font-bold ${divisao.classeCabecalho}`}
+                  >
+                    {jogadoresDaDivisao.length}{' '}
+                    {jogadoresDaDivisao.length === 1
+                      ? 'jogador'
+                      : 'jogadores'}
+                  </span>
+
+                  <span className="text-xs text-slate-500">
+                    Clique para ver o perfil
+                  </span>
+                </div>
+              </header>
+
+              {jogadoresDaDivisao.length > 0 ? (
+                <div className="divide-y divide-slate-800 bg-slate-900">
+                  {jogadoresDaDivisao.map(
+                    (jogador) => (
+                      <Link
+                        key={jogador.id}
+                        to={`/jogador/${jogador.id}`}
+                        title={`Ver perfil de ${jogador.nome}`}
+                        className="group flex items-center gap-3 px-5 py-4 transition hover:bg-slate-800/60"
+                      >
+                        <AvatarJogador
+                          jogador={jogador}
+                        />
+
+                        <NomeJogador
+                          jogador={jogador}
+                        />
+
+                        <div className="ml-auto flex shrink-0 items-center gap-1">
+                          {Array.from({
+                            length: jogador.estrelas,
+                          }).map(
+                            (_, estrela) => (
+                              <Star
+                                key={estrela}
+                                size={15}
+                                fill="currentColor"
+                                className="text-yellow-400"
+                              />
+                            ),
+                          )}
+                        </div>
+                      </Link>
+                    ),
+                  )}
+                </div>
+              ) : (
+                <div className="bg-slate-900 px-5 py-8 text-center text-sm text-slate-500">
+                  Nenhum jogador nesta divisão.
+                </div>
+              )}
+            </article>
+          )
+        })}
+      </section>
+    </>
   )
 }
 
@@ -330,6 +1350,11 @@ function Ranking({ tipo }: RankingProps) {
     erro,
     recarregar,
   } = useJogadores()
+
+  const { perfil } = useAuth()
+
+  const ehAdmin =
+    perfil?.tipo === 'admin'
 
   const configuracao = configuracoes[tipo]
   const { Icone } = configuracao
@@ -488,6 +1513,7 @@ function Ranking({ tipo }: RankingProps) {
         {tipo === 'estrelas' ? (
           <RankingEstrelas
             jogadores={jogadores}
+            ehAdmin={ehAdmin}
           />
         ) : (
           <article className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
