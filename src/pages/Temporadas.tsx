@@ -128,6 +128,66 @@ function Avatar({
   )
 }
 
+
+function CardSelecaoTemporada({
+  jogador,
+  destaque = false,
+}: {
+  jogador: JogadorTemporada
+  destaque?: boolean
+}) {
+  const conteudo = (
+    <div
+      className={`flex items-center gap-3 rounded-2xl border p-3 transition ${
+        destaque
+          ? 'border-emerald-300/30 bg-slate-950/85 shadow-lg shadow-emerald-950/20'
+          : 'border-slate-700 bg-slate-950/70'
+      }`}
+    >
+      <div className="relative shrink-0">
+        <Avatar jogador={jogador} />
+
+        <span className="absolute -bottom-2 -right-2 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-slate-950 bg-emerald-500 px-1 text-[10px] font-black text-slate-950">
+          {jogador.colocacao}º
+        </span>
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-black text-white">
+          {nomeExibicao(jogador)}
+        </p>
+
+        {jogador.apelido && (
+          <p className="truncate text-[11px] text-slate-500">
+            {jogador.nome}
+          </p>
+        )}
+
+        <p className="mt-1 text-xs font-bold text-emerald-300">
+          {jogador.pontos} pts
+        </p>
+      </div>
+    </div>
+  )
+
+  if (!jogador.ativo) {
+    return (
+      <div className="opacity-70">
+        {conteudo}
+      </div>
+    )
+  }
+
+  return (
+    <Link
+      to={`/jogador/${jogador.jogador_id}`}
+      className="block rounded-2xl outline-none transition hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-emerald-400"
+    >
+      {conteudo}
+    </Link>
+  )
+}
+
 function Temporadas() {
   const anoAtual =
     new Date().getFullYear()
@@ -313,6 +373,23 @@ function Temporadas() {
           primeiro(
             'selecoes_semana',
           ),
+      }
+    }, [jogadores])
+
+  const selecaoTemporada =
+    useMemo(() => {
+      const classificados =
+        [...jogadores].sort(
+          (a, b) =>
+            a.colocacao -
+            b.colocacao,
+        )
+
+      return {
+        titulares:
+          classificados.slice(0, 4),
+        reservas:
+          classificados.slice(4, 8),
       }
     }, [jogadores])
 
@@ -707,6 +784,118 @@ function Temporadas() {
                       </article>
                     ),
                   )}
+                </div>
+              </section>
+            )}
+
+
+            {jogadores.length > 0 && (
+              <section className="mt-8">
+                <div className="mb-4">
+                  <p className="text-sm font-medium text-emerald-400">
+                    Time do ano
+                  </p>
+
+                  <h3 className="mt-1 text-2xl font-black">
+                    Seleção da Temporada
+                  </h3>
+
+                  <p className="mt-1 text-sm text-slate-400">
+                    Os quatro primeiros colocados formam a equipe titular. Do 5º ao 8º lugar ficam no banco de reservas.
+                  </p>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
+                  <article className="overflow-hidden rounded-3xl border border-emerald-500/20 bg-slate-900">
+                    <div className="border-b border-slate-800 px-5 py-4">
+                      <div className="flex items-center gap-2">
+                        <Trophy
+                          size={19}
+                          className="text-emerald-400"
+                        />
+
+                        <h4 className="font-black">
+                          Titulares
+                        </h4>
+                      </div>
+                    </div>
+
+                    <div className="relative min-h-[430px] overflow-hidden bg-emerald-950/70 p-5 sm:p-7">
+                      <div className="pointer-events-none absolute inset-5 rounded-[28px] border-2 border-white/20 sm:inset-7">
+                        <div className="absolute left-0 right-0 top-1/2 border-t-2 border-white/20" />
+
+                        <div className="absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/20" />
+
+                        <div className="absolute left-1/2 top-0 h-16 w-36 -translate-x-1/2 border-x-2 border-b-2 border-white/20" />
+
+                        <div className="absolute bottom-0 left-1/2 h-16 w-36 -translate-x-1/2 border-x-2 border-t-2 border-white/20" />
+                      </div>
+
+                      <div className="relative z-10 grid min-h-[380px] grid-cols-2 content-around gap-x-4 gap-y-8 sm:gap-x-8">
+                        {selecaoTemporada.titulares.map(
+                          (jogador) => (
+                            <CardSelecaoTemporada
+                              key={
+                                jogador.jogador_id
+                              }
+                              jogador={
+                                jogador
+                              }
+                              destaque
+                            />
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  </article>
+
+                  <article className="rounded-3xl border border-slate-800 bg-slate-900 p-5">
+                    <div className="flex items-center gap-2">
+                      <Users
+                        size={20}
+                        className="text-blue-400"
+                      />
+
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-slate-500">
+                          Banco
+                        </p>
+
+                        <h4 className="font-black">
+                          Reservas
+                        </h4>
+                      </div>
+                    </div>
+
+                    {selecaoTemporada.reservas.length > 0 ? (
+                      <div className="mt-5 space-y-3">
+                        {selecaoTemporada.reservas.map(
+                          (jogador) => (
+                            <CardSelecaoTemporada
+                              key={
+                                jogador.jogador_id
+                              }
+                              jogador={
+                                jogador
+                              }
+                            />
+                          ),
+                        )}
+                      </div>
+                    ) : (
+                      <div className="mt-5 rounded-2xl border border-dashed border-slate-700 p-6 text-center">
+                        <p className="text-sm text-slate-500">
+                          Ainda não há jogadores suficientes para formar o banco de reservas.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="mt-5 rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+                      <p className="text-xs leading-5 text-slate-500">
+                        A seleção segue exatamente a ordem do Ranking da Temporada e usa a mesma pontuação da classificação.
+                      </p>
+                    </div>
+                  </article>
                 </div>
               </section>
             )}
