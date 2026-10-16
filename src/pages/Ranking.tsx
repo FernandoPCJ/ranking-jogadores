@@ -1,7 +1,11 @@
 import {
   Check,
+  ChevronDown,
+  Clock,
   Goal,
   Handshake,
+  History,
+  MessageCircle,
   RefreshCw,
   RotateCcw,
   Shuffle,
@@ -22,6 +26,14 @@ import {
   useJogadores,
   type Jogador,
 } from '../hooks/useJogadores'
+import {
+  compartilharNoWhatsApp,
+  formatarDataHora,
+  INTERVALO_SORTEIO_MINUTOS,
+  useSorteios,
+  type SorteioRegistrado,
+  type TimeRegistrado,
+} from '../hooks/useSorteios'
 
 export type TipoRanking =
   | 'gols'
@@ -618,11 +630,42 @@ function estrelasCompactas(
   )
 }
 
+function formatarContagem(
+  segundos: number,
+) {
+  const minutos = Math.floor(
+    segundos / 60,
+  )
+  const resto = segundos % 60
+
+  return `${String(minutos).padStart(2, '0')}:${String(resto).padStart(2, '0')}`
+}
+
 function SorteadorTimes({
   jogadores,
+  registrar,
+  segundosRestantes,
 }: {
   jogadores: Jogador[]
+  registrar: ReturnType<
+    typeof useSorteios
+  >['registrar']
+  segundosRestantes: number
 }) {
+  const [enviando, setEnviando] =
+    useState(false)
+
+  const [
+    sorteioAtual,
+    setSorteioAtual,
+  ] = useState<{
+    realizado_em: string
+    times: TimeRegistrado[]
+  } | null>(null)
+
+  const bloqueado =
+    segundosRestantes > 0
+
   const [
     jogadoresSelecionados,
     setJogadoresSelecionados,
@@ -760,7 +803,11 @@ function SorteadorTimes({
     setMensagem('')
   }
 
-  function sortearTimes() {
+  async function sortearTimes() {
+    if (enviando || bloqueado) {
+      return
+    }
+
     const quantidadeNecessaria =
       quantidadeTimes === 3
         ? 12
@@ -793,8 +840,36 @@ function SorteadorTimes({
       return
     }
 
-    setTimes(resultado)
+    setEnviando(true)
     setMensagem('')
+
+    /*
+     * O sorteio só aparece na tela depois que o
+     * servidor registra no histórico (com data e
+     * hora do servidor). Se estiver dentro do
+     * intervalo de 15 minutos, o servidor recusa.
+     */
+    const registro = await registrar(
+      resultado.map((time) =>
+        time.jogadores.map(
+          (jogador) => jogador.id,
+        ),
+      ),
+    )
+
+    setEnviando(false)
+
+    if (!registro.ok) {
+      setMensagem(registro.mensagem)
+      return
+    }
+
+    setTimes(resultado)
+    setSorteioAtual({
+      realizado_em:
+        registro.sorteio.realizado_em,
+      times: registro.sorteio.times,
+    })
   }
 
   const totais =
@@ -838,6 +913,10 @@ function SorteadorTimes({
 
               <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-400">
                 Selecione quem vai jogar. Para montar 3 times, escolha 12 jogadores. Para montar 4 times, escolha 16 jogadores. O sistema usa as estrelas para procurar a divisão com a menor diferença de força possível.
+              </p>
+
+              <p className="mt-2 max-w-3xl text-xs leading-5 text-slate-500">
+                Todo sorteio fica registrado no histórico com data e horário, e só é possível sortear 1 vez a cada {INTERVALO_SORTEIO_MINUTOS} minutos.
               </p>
             </div>
           </div>
@@ -937,17 +1016,27 @@ function SorteadorTimes({
               onClick={sortearTimes}
               disabled={
                 selecionados.length !==
-                limiteJogadores
+                  limiteJogadores ||
+                bloqueado ||
+                enviando
               }
               className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <Shuffle size={17} />
-              {times.length > 0
-                ? 'Sortear novamente'
-                : selecionados.length ===
-                    limiteJogadores
-                  ? 'Montar times'
-                  : `Selecione ${limiteJogadores}`}
+              {bloqueado ? (
+                <Clock size={17} />
+              ) : (
+                <Shuffle size={17} />
+              )}
+              {enviando
+                ? 'Sorteando...'
+                : bloqueado
+                  ? `Liberado em ${formatarContagem(segundosRestantes)}`
+                  : times.length > 0
+                    ? 'Sortear novamente'
+                    : selecionados.length ===
+                        limiteJogadores
+                      ? 'Montar times'
+                      : `Selecione ${limiteJogadores}`}
 
             </button>
           </div>
@@ -1074,6 +1163,15 @@ function SorteadorTimes({
                 <h4 className="mt-1 text-xl font-black">
                   Times do racha
                 </h4>
+
+                {sorteioAtual && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    Sorteio registrado em{' '}
+                    {formatarDataHora(
+                      sorteioAtual.realizado_em,
+                    )}
+                  </p>
+                )}
               </div>
 
               <div className="rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-2 text-sm">
@@ -1191,20 +1289,236 @@ function SorteadorTimes({
                 A quantidade de jogadores por time fica igual ou difere no máximo em 1 quando o total não é divisível exatamente.
               </p>
 
-              <button
-                type="button"
-                onClick={sortearTimes}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-700 px-3 py-2 font-semibold text-slate-300 transition hover:bg-slate-800"
-              >
-                <RotateCcw
-                  size={15}
-                />
-                Nova combinação
-              </button>
+              <div className="flex shrink-0 flex-wrap gap-2">
+                {sorteioAtual && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      compartilharNoWhatsApp(
+                        sorteioAtual.times,
+                        sorteioAtual.realizado_em,
+                      )
+                    }
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] px-3 py-2 font-black text-slate-950 transition hover:brightness-110"
+                  >
+                    <MessageCircle
+                      size={15}
+                    />
+                    Compartilhar no WhatsApp
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={sortearTimes}
+                  disabled={
+                    bloqueado || enviando
+                  }
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 px-3 py-2 font-semibold text-slate-300 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <RotateCcw
+                    size={15}
+                  />
+                  {bloqueado
+                    ? `Nova combinação em ${formatarContagem(segundosRestantes)}`
+                    : 'Nova combinação'}
+                </button>
+              </div>
             </div>
           </div>
         )}
       </div>
+    </section>
+  )
+}
+
+function HistoricoSorteios({
+  sorteios,
+  carregando,
+  erro,
+  recarregar,
+}: {
+  sorteios: SorteioRegistrado[]
+  carregando: boolean
+  erro: string | null
+  recarregar: () => void
+}) {
+  const [aberto, setAberto] =
+    useState<number | null>(null)
+
+  return (
+    <section className="mb-8 overflow-hidden rounded-3xl border border-slate-800 bg-slate-900">
+      <header className="flex flex-col gap-3 border-b border-slate-800 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-400">
+            <History size={22} />
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-sky-400">
+              Transparência
+            </p>
+
+            <h3 className="mt-1 text-xl font-black text-white">
+              Histórico de sorteios
+            </h3>
+
+            <p className="mt-1 text-sm leading-6 text-slate-400">
+              Todos os sorteios feitos, com data, horário e quem sorteou. Os registros não podem ser editados nem apagados.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={recarregar}
+          className="flex shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-800"
+        >
+          <RefreshCw size={17} />
+          Atualizar
+        </button>
+      </header>
+
+      {carregando ? (
+        <div className="px-6 py-8 text-center text-sm text-slate-500">
+          Carregando histórico...
+        </div>
+      ) : erro ? (
+        <div className="px-6 py-8 text-center text-sm text-red-300">
+          {erro}
+        </div>
+      ) : sorteios.length === 0 ? (
+        <div className="px-6 py-8 text-center text-sm text-slate-500">
+          Nenhum sorteio registrado ainda.
+        </div>
+      ) : (
+        <ul className="divide-y divide-slate-800">
+          {sorteios.map((sorteio, indice) => {
+            const expandido =
+              aberto === sorteio.id
+
+            return (
+              <li key={sorteio.id}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setAberto(
+                      expandido
+                        ? null
+                        : sorteio.id,
+                    )
+                  }
+                  aria-expanded={expandido}
+                  className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-slate-800/50 sm:px-6"
+                >
+                  <span className="inline-flex h-9 min-w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-2 text-xs font-bold text-slate-400">
+                    #{sorteio.id}
+                  </span>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-white">
+                      {formatarDataHora(
+                        sorteio.realizado_em,
+                      )}
+                      {indice === 0 && (
+                        <span className="ml-2 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                          Mais recente
+                        </span>
+                      )}
+                    </p>
+
+                    <p className="mt-0.5 truncate text-xs text-slate-500">
+                      Por {sorteio.realizado_por} ·{' '}
+                      {sorteio.quantidade_times} times · diferença{' '}
+                      {sorteio.diferenca}{' '}
+                      {sorteio.diferenca === 1
+                        ? 'estrela'
+                        : 'estrelas'}
+                    </p>
+                  </div>
+
+                  <ChevronDown
+                    size={18}
+                    className={`shrink-0 text-slate-500 transition ${
+                      expandido
+                        ? 'rotate-180'
+                        : ''
+                    }`}
+                  />
+                </button>
+
+                {expandido && (
+                  <div className="px-5 pb-5 sm:px-6">
+                    <div
+                      className={`grid gap-3 ${
+                        sorteio.times.length === 3
+                          ? 'md:grid-cols-3'
+                          : 'md:grid-cols-2 xl:grid-cols-4'
+                      }`}
+                    >
+                      {sorteio.times.map(
+                        (time) => (
+                          <div
+                            key={time.numero}
+                            className="rounded-2xl border border-slate-800 bg-slate-950/50"
+                          >
+                            <div className="flex items-center justify-between border-b border-slate-800 px-4 py-2.5">
+                              <strong className="text-sm text-white">
+                                Time {time.numero}
+                              </strong>
+
+                              <span className="text-xs font-black text-yellow-300">
+                                {time.total_estrelas}★
+                              </span>
+                            </div>
+
+                            <ul className="px-4 py-2 text-sm text-slate-300">
+                              {time.jogadores.map(
+                                (jogador) => (
+                                  <li
+                                    key={jogador.id}
+                                    className="flex items-center justify-between py-1"
+                                  >
+                                    <Link
+                                      to={`/jogador/${jogador.id}`}
+                                      className="truncate hover:text-emerald-300"
+                                    >
+                                      {jogador.apelido ||
+                                        jogador.nome}
+                                    </Link>
+
+                                    <span className="ml-2 shrink-0 text-xs text-yellow-300/80">
+                                      {jogador.estrelas}★
+                                    </span>
+                                  </li>
+                                ),
+                              )}
+                            </ul>
+                          </div>
+                        ),
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        compartilharNoWhatsApp(
+                          sorteio.times,
+                          sorteio.realizado_em,
+                        )
+                      }
+                      className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-3 py-2 text-xs font-black text-slate-950 transition hover:brightness-110"
+                    >
+                      <MessageCircle size={15} />
+                      Compartilhar no WhatsApp
+                    </button>
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </section>
   )
 }
@@ -1216,13 +1530,33 @@ function RankingEstrelas({
   jogadores: Jogador[]
   ehAdmin: boolean
 }) {
+  const {
+    sorteios,
+    carregando: carregandoSorteios,
+    erro: erroSorteios,
+    recarregar: recarregarSorteios,
+    registrar,
+    segundosRestantes,
+  } = useSorteios()
+
   return (
     <>
       {ehAdmin && (
         <SorteadorTimes
           jogadores={jogadores}
+          registrar={registrar}
+          segundosRestantes={
+            segundosRestantes
+          }
         />
       )}
+
+      <HistoricoSorteios
+        sorteios={sorteios}
+        carregando={carregandoSorteios}
+        erro={erroSorteios}
+        recarregar={recarregarSorteios}
+      />
 
       <section className="grid gap-6 xl:grid-cols-2">
         {divisoes.map((divisao, indice) => {
